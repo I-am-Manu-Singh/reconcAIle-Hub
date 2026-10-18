@@ -1,0 +1,165 @@
+================================================================================
+COMPREHENSIVE SPECIFICATION: PHASE 5 - AUTOMATED BANK RECONCILIATION STATEMENT (BRS)
+& UNMATCHED DIFFERENCE AUDIT ENGINE
+================================================================================
+Architectural Synthesis of:
+1. Hisaabo (hisaabo/hisaabo) - 4-Tier Matching Engine, Timing Difference Tracker & BRS Reports
+2. Bally-AI (jishanahmed-shaikh/bally-ai) - Statement-to-Ledger Linking & Variance Detection
+================================================================================
+
+1. OVERVIEW & WHY PHASE 5 IS NEEDED
+--------------------------------------------------------------------------------
+Phases 1-4 take care of the "Statement -> Vouchers -> Tally" pipeline.
+However, in practical accounting and CA audit practices (as pioneered by Hisaabo):
+
+Simply importing transactions into Tally is only half the job.
+Accountants and CAs need Automated Bank Reconciliation (BRS):
+- Comparing what the Bank Statement says vs what the Tally Bank Ledger already contains.
+- Identifying transactions that exist in the Bank Statement but are MISSING in Tally.
+- Identifying vouchers that exist in Tally (e.g. issued cheques) but haven't CLEARED the bank yet (Timing Differences).
+- Detecting amount discrepancies (e.g., Tally recorded ₹15,000, bank deducted ₹15,050 due to charges).
+- Producing the formal Statutory Bank Reconciliation Statement (BRS) as required by auditors and tax authorities.
+
+
+2. HISAABO 4-TIER RECONCILIATION MATCHING ENGINE
+--------------------------------------------------------------------------------
+When comparing imported Bank Transactions against existing Tally Vouchers (`mirror_vouchers`):
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ Tier 1: Exact Match (Confidence: 1.0)                                       │
+│ Criteria: Exact Amount + Exact Date + Exact Reference/Cheque Number         │
+│ Action: Mark Reconciled instantly with zero human intervention.             │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                  │ (No match)
+                                  ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ Tier 2: Strong Window Match (Confidence: 0.95)                              │
+│ Criteria: Exact Amount + Exact Reference/UTR/Chq within a 3-day Date Window │
+│ Reason: Cheques or NEFTs issued on Friday clearing on Monday.               │
+│ Action: Mark Reconciled (Timing Difference documented).                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                  │ (No match)
+                                  ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ Tier 3: Narration & Entity Match (Confidence: 0.85)                         │
+│ Criteria: Exact Amount within 7-day Window + Fuzzy Party Name Match (>0.85) │
+│ Reason: Same amount paid to supplier, but bank narration format differed.   │
+│ Action: Suggest Match to user with 1-click confirmation.                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                  │ (No match)
+                                  ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ Tier 4: Unmatched / Discrepancy Bucket                                      │
+│ - Category A: In Bank, Not in Tally (Unrecorded Bank Debits/Credits)        │
+│ - Category B: In Tally, Not in Bank (Unpresented Cheques / In-transit Funds) │
+│ - Category C: Amount Mismatch (e.g., bank charges difference)               │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+3. BRS REPORTING & MATHEMATICAL BALANCING MODEL
+--------------------------------------------------------------------------------
+The BRS Engine computes the formal audit balance sheet:
+
+   Balance as per Company Books (Tally Bank Ledger):               ₹ X,XX,XXX.XX
+   Add: Cheques issued but not yet presented for payment:        + ₹    XX,XXX.XX
+   Add: Direct deposits in Bank not recorded in Books:           + ₹    XX,XXX.XX
+   Less: Cheques deposited but not yet cleared:                  - ₹    XX,XXX.XX
+   Less: Bank charges / interest debited directly by Bank:       - ₹     X,XXX.XX
+   -----------------------------------------------------------------------------
+   Balance as per Bank Statement:                                = ₹ Y,YY,YYY.YY
+   Difference / Unreconciled Variance:                           = ₹        0.00
+
+
+4. DATA STRUCTURES & SERVICE INTERFACES
+--------------------------------------------------------------------------------
+File: `electron/main/services/reconciliationTypes.ts`
+
+```typescript
+export interface BRSMatchItem {
+  bankTransactionId: string;
+  tallyVoucherId: string;
+  matchTier: "EXACT" | "WINDOW_DATE" | "NARRATION_PARTY" | "MANUAL";
+  confidenceScore: number;
+  bankAmount: number;
+  tallyAmount: number;
+  bankDate: string;
+  tallyDate: string;
+  clearingDate: string;
+  differenceAmount: number;
+}
+
+export interface BRSUnmatchedBankTx {
+  bankTransactionId: string;
+  date: string;
+  narration: string;
+  debit: number;
+  credit: number;
+  suggestedAction: "CREATE_VOUCHER_IN_TALLY" | "IGNORE_FEES" | "INVESTIGATE";
+}
+
+export interface BRSUnmatchedTallyVoucher {
+  voucherId: string;
+  date: string;
+  voucherNumber: string;
+  partyName: string;
+  amount: number;
+  voucherType: string;
+  reason: "CHEQUE_UNPRESENTED" | "CHEQUE_UNCLEARED" | "TIMING_DIFFERENCE";
+}
+
+export interface StatutoryBRSReport {
+  companyName: string;
+  bankLedgerName: string;
+  period: { fromDate: string; toDate: string };
+  bookBalance: number;
+  statementBalance: number;
+  totalReconciledCount: number;
+  unpresentedChequesTotal: number;
+  unrecordedBankCreditsTotal: number;
+  unclearedDepositsTotal: number;
+  unrecordedBankDebitsTotal: number;
+  unreconciledDifference: number;
+  matches: BRSMatchItem[];
+  unmatchedBankTxs: BRSUnmatchedBankTx[];
+  unmatchedTallyVouchers: BRSUnmatchedTallyVoucher[];
+}
+```
+
+
+5. IPC & PRELOAD API SPECIFICATION
+--------------------------------------------------------------------------------
+File: `electron/main/ipc/reconciliationIpc.ts` & `electron/preload/preload.ts`
+
+1. `reconciliation:run-auto-brs`:
+   - Inputs: `{ companyId: string, bankLedgerName: string, fromDate: string, toDate: string }`
+   - Executes the 4-tier matching between SQLite `bank_transactions` and `mirror_vouchers`.
+   - Returns `StatutoryBRSReport`.
+
+2. `reconciliation:link-manual-match`:
+   - Links a specific bank transaction to an existing Tally voucher with optional variance reason.
+
+3. `reconciliation:export-brs-pdf`:
+   - Generates an executive statutory BRS audit summary PDF for CA sign-off.
+
+
+6. UI INTEGRATION IN RECONCILIATIONVIEW.TSX
+--------------------------------------------------------------------------------
+- Real-time BRS card indicators:
+  * "Reconciliation Accuracy: 98.4%"
+  * "Timing Differences: ₹45,000 (3 Cheques)"
+  * "Unrecorded Bank Charges: ₹236 (Auto-create voucher button)"
+- Side-by-Side Dual Pane:
+  * Left Pane: Bank Statement Feed (from PDF import)
+  * Right Pane: Tally Book Vouchers (from Mirror sync)
+  * Visual connecting lines or highlights for matched pairs.
+
+
+7. STEP-BY-STEP IMPLEMENTATION CHECKLIST
+--------------------------------------------------------------------------------
+[ ] Step 1: Create `electron/main/services/reconciliationTypes.ts`.
+[ ] Step 2: Implement `electron/main/services/brsMatchingEngine.ts` with 4-tier rule matching.
+[ ] Step 3: Implement `electron/main/services/brsReportGenerator.ts` computing statutory audit totals.
+[ ] Step 4: Register IPC handlers in `reconciliationIpc.ts` and expose in `preload.ts`.
+[ ] Step 5: Connect `ReconciliationView.tsx` with dynamic BRS cards, dual-pane matched views, and "Auto-Reconcile" button.
+[ ] Step 6: Verification: Run automated BRS test with 50 bank transactions against 45 Tally vouchers, verifying that matched pairs auto-reconcile, timing differences are correctly classified, and the net variance reconciles to ₹0.00.
+================================================================================

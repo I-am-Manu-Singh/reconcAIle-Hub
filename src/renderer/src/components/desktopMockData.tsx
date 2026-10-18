@@ -1,0 +1,480 @@
+import React, { useState } from "react";
+export const MOCK_DESKTOP_STATE = {
+  appInfo: {
+    appName: "ReconcAILe Hub",
+    appVersion: "1.4.2-enterprise",
+    platform: "darwin",
+    mode: "browser",
+  },
+  connectorStatus: {
+    localConnectorAvailable: true,
+    tallyLocalIntegrationAvailable: true,
+    reason: "TallyPrime XML Listener Active (Port 9000)",
+  },
+  deviceIdentity: {
+    id: "dev_device_mbp_m3",
+    deviceName: "",
+  },
+
+  mirrorStatsMap: {
+    comp_1: {
+      companiesCount: 1,
+      ledgersCount: 42,
+      vouchersCount: 128,
+      documentsCount: 18,
+      pendingSyncCount: 2,
+      activeStockItems: 185,
+      avgOcrLatency: "1.1s",
+      tallyPingMs: 6,
+      accountingHealth: 94,
+    },
+    comp_2: {
+      companiesCount: 1,
+      ledgersCount: 31,
+      vouchersCount: 96,
+      documentsCount: 12,
+      pendingSyncCount: 5,
+      activeStockItems: 110,
+      avgOcrLatency: "1.4s",
+      tallyPingMs: 12,
+      accountingHealth: 82,
+    },
+    comp_3: {
+      companiesCount: 1,
+      ledgersCount: 54,
+      vouchersCount: 210,
+      documentsCount: 24,
+      pendingSyncCount: 1,
+      activeStockItems: 240,
+      avgOcrLatency: "0.9s",
+      tallyPingMs: 5,
+      accountingHealth: 98,
+    },
+    comp_4: {
+      companiesCount: 1,
+      ledgersCount: 19,
+      vouchersCount: 45,
+      documentsCount: 8,
+      pendingSyncCount: 6,
+      activeStockItems: 65,
+      avgOcrLatency: "1.8s",
+      tallyPingMs: 15,
+      accountingHealth: 74,
+    },
+    comp_5: {
+      companiesCount: 1,
+      ledgersCount: 26,
+      vouchersCount: 72,
+      documentsCount: 10,
+      pendingSyncCount: 3,
+      activeStockItems: 95,
+      avgOcrLatency: "1.3s",
+      tallyPingMs: 9,
+      accountingHealth: 89,
+    },
+  },
+  mirrorCompanies: [
+    {
+      id: "comp_1",
+      name: "Acme Enterprise Private Limited",
+      displayName: "Acme Enterprise Pvt Ltd (HQ)",
+      stateName: "Maharashtra",
+      gstin: "27AABCU9603R1ZN",
+      booksFrom: "2026-04-01",
+      financialYear: "2026-2027",
+      sourceProvider: "TallyPrime",
+    },
+    {
+      id: "comp_2",
+      name: "Global Tech Logistics India",
+      displayName: "Global Tech Logistics (BLR)",
+      stateName: "Karnataka",
+      gstin: "29BBBCU8812K1Z4",
+      booksFrom: "2026-04-01",
+      financialYear: "2026-2027",
+      sourceProvider: "BUSY",
+    },
+    {
+      id: "comp_3",
+      name: "Apex Infotech & Solutions",
+      displayName: "Apex Infotech (Delhi Branch)",
+      stateName: "Delhi",
+      gstin: "07AAACA4491M1Z1",
+      booksFrom: "2026-04-01",
+      financialYear: "2026-2027",
+      sourceProvider: "TallyPrime",
+    },
+    {
+      id: "comp_4",
+      name: "Vanguard Retail Ventures",
+      displayName: "Vanguard Retail (MH Ops)",
+      stateName: "Maharashtra",
+      gstin: "27AABCV1192P1Z8",
+      booksFrom: "2026-04-01",
+      financialYear: "2026-2027",
+      sourceProvider: "TallyPrime",
+    },
+    {
+      id: "comp_5",
+      name: "Zenith Cloud Systems",
+      displayName: "Zenith Cloud (Hyd R&D)",
+      stateName: "Telangana",
+      gstin: "36AAACZ5523E1Z9",
+      booksFrom: "2026-04-01",
+      financialYear: "2026-2027",
+      sourceProvider: "BUSY",
+    },
+  ],
+  mirrorLedgers: [
+    // comp_1 Ledgers (Acme Enterprise Pvt Ltd)
+    { id: "l1", companyId: "comp_1", name: "SBI Current Account - 3012", parentName: "Bank Accounts", openingBalanceText: "520000.00 Dr", gstin: "27AABCU9603R1ZN", stateName: "Maharashtra" },
+    { id: "l4", companyId: "comp_1", name: "Acme Logistics Pvt Ltd", parentName: "Sundry Debtors", openingBalanceText: "145000.00 Dr", gstin: "27AABCU9603R1ZN", stateName: "Maharashtra" },
+    { id: "l5", companyId: "comp_1", name: "TechCorp India Solutions", parentName: "Sundry Creditors", openingBalanceText: "88000.00 Cr", gstin: "27AABCT8891Q1ZP", stateName: "Maharashtra" },
+    { id: "l8", companyId: "comp_1", name: "Domestic Sales Account", parentName: "Sales Accounts", openingBalanceText: "0.00", gstin: "", stateName: "Maharashtra" },
+    { id: "l10", companyId: "comp_1", name: "Software Development Expenses", parentName: "Direct Expenses", openingBalanceText: "0.00", gstin: "", stateName: "Maharashtra" },
+    { id: "l11", companyId: "comp_1", name: "Office Rent & Facility Maintenance", parentName: "Indirect Expenses", openingBalanceText: "0.00", gstin: "", stateName: "Maharashtra" },
+    { id: "l13", companyId: "comp_1", name: "CGST Input Tax Credit", parentName: "Duties & Taxes", openingBalanceText: "32500.00 Dr", gstin: "", stateName: "Maharashtra" },
+    { id: "l14", companyId: "comp_1", name: "SGST Input Tax Credit", parentName: "Duties & Taxes", openingBalanceText: "32500.00 Dr", gstin: "", stateName: "Maharashtra" },
+    { id: "l15", companyId: "comp_1", name: "IGST Input Tax Credit", parentName: "Duties & Taxes", openingBalanceText: "64000.00 Dr", gstin: "", stateName: "Maharashtra" },
+    { id: "l16", companyId: "comp_1", name: "CGST Output Liability", parentName: "Duties & Taxes", openingBalanceText: "48000.00 Cr", gstin: "", stateName: "Maharashtra" },
+    { id: "l17", companyId: "comp_1", name: "SGST Output Liability", parentName: "Duties & Taxes", openingBalanceText: "48000.00 Cr", gstin: "", stateName: "Maharashtra" },
+    { id: "l18", companyId: "comp_1", name: "Dell Latitude 5540 Stock", parentName: "Stock-in-Hand", openingBalanceText: "1170000.00 Dr", gstin: "", stateName: "Maharashtra" },
+
+    // comp_2 Ledgers (Global Tech Logistics)
+    { id: "l2", companyId: "comp_2", name: "HDFC Current Account - 5020", parentName: "Bank Accounts", openingBalanceText: "840000.00 Dr", gstin: "29BBBCU8812K1Z4", stateName: "Karnataka" },
+    { id: "l7", companyId: "comp_2", name: "Apex Retail Solutions", parentName: "Sundry Debtors", openingBalanceText: "98000.00 Dr", gstin: "29AAACC1120K1Z2", stateName: "Karnataka" },
+    { id: "l19", companyId: "comp_2", name: "Global Freight Revenue", parentName: "Sales Accounts", openingBalanceText: "0.00", gstin: "", stateName: "Karnataka" },
+    { id: "l20", companyId: "comp_2", name: "Warehouse Lease & Logistics Charges", parentName: "Direct Expenses", openingBalanceText: "0.00", gstin: "", stateName: "Karnataka" },
+    { id: "l21", companyId: "comp_2", name: "IGST Output Liability", parentName: "Duties & Taxes", openingBalanceText: "55800.00 Cr", gstin: "", stateName: "Karnataka" },
+
+    // comp_3 Ledgers (Apex Infotech & Solutions)
+    { id: "l3", companyId: "comp_3", name: "ICICI Operating Account", parentName: "Bank Accounts", openingBalanceText: "310000.00 Dr", gstin: "07AAACA4491M1Z1", stateName: "Delhi" },
+    { id: "l9", companyId: "comp_3", name: "Export Sales (Software)", parentName: "Sales Accounts", openingBalanceText: "0.00", gstin: "", stateName: "Delhi" },
+    { id: "l22", companyId: "comp_3", name: "InfraSoft Services LLP", parentName: "Sundry Creditors", openingBalanceText: "215000.00 Cr", gstin: "27AAACG9921P1Z3", stateName: "Delhi" },
+    { id: "l23", companyId: "comp_3", name: "Subcontractor Engineering Charges", parentName: "Direct Expenses", openingBalanceText: "0.00", gstin: "", stateName: "Delhi" },
+
+    // comp_4 Ledgers (Vanguard Retail Ventures)
+    { id: "l24", companyId: "comp_4", name: "Axis Bank Current Account", parentName: "Bank Accounts", openingBalanceText: "1146000.00 Dr", gstin: "27AABCV1192P1Z8", stateName: "Maharashtra" },
+    { id: "l25", companyId: "comp_4", name: "CloudNet Systems Pvt Ltd", parentName: "Sundry Creditors", openingBalanceText: "100300.00 Cr", gstin: "29AAACC1120K1Z2", stateName: "Maharashtra" },
+    { id: "l26", companyId: "comp_4", name: "Retail Hardware Sales", parentName: "Sales Accounts", openingBalanceText: "0.00", gstin: "", stateName: "Maharashtra" },
+
+    // comp_5 Ledgers (Zenith Cloud Systems)
+    { id: "l12", companyId: "comp_5", name: "AWS Cloud Infrastructure Charges", parentName: "Direct Expenses", openingBalanceText: "0.00", gstin: "", stateName: "Telangana" },
+    { id: "l27", companyId: "comp_5", name: "State Bank of India Operating Acc", parentName: "Bank Accounts", openingBalanceText: "812400.00 Dr", gstin: "36AAACZ5523E1Z9", stateName: "Telangana" },
+    { id: "l28", companyId: "comp_5", name: "Enterprise SaaS Revenue", parentName: "Sales Accounts", openingBalanceText: "0.00", gstin: "", stateName: "Telangana" },
+  ],
+  mirrorVouchers: [
+    // comp_1 Vouchers
+    { id: "v1", companyId: "comp_1", voucherNumber: "INV-2026-001", voucherDate: "2026-07-15", voucherTypeName: "Sales", partyName: "Acme Logistics Pvt Ltd", taxableAmount: 150000, cgstAmount: 13500, sgstAmount: 13500, totalAmount: 177000, validationStatus: "BALANCED", status: "APPROVED", narration: "Software consulting & implementation services for Q2" },
+    { id: "v2", companyId: "comp_1", voucherNumber: "PUR-2026-101", voucherDate: "2026-07-20", voucherTypeName: "Purchase", partyName: "TechCorp India Solutions", taxableAmount: 100000, cgstAmount: 9000, sgstAmount: 9000, totalAmount: 118000, validationStatus: "BALANCED", status: "APPROVED", narration: "Enterprise rack server hardware procurement" },
+    { id: "v6", companyId: "comp_1", voucherNumber: "INV-2026-002", voucherDate: "2026-07-22", voucherTypeName: "Sales", partyName: "Acme Logistics Pvt Ltd", taxableAmount: 220000, cgstAmount: 19800, sgstAmount: 19800, totalAmount: 259600, validationStatus: "BALANCED", status: "APPROVED", narration: "Annual ERP Maintenance & SLA License" },
+    { id: "v7", companyId: "comp_1", voucherNumber: "PUR-2026-102", voucherDate: "2026-07-25", voucherTypeName: "Purchase", partyName: "Capital Stationery Mart", taxableAmount: 15000, cgstAmount: 1350, sgstAmount: 1350, totalAmount: 17700, validationStatus: "BALANCED", status: "APPROVED", narration: "Office paper & printing cartridges" },
+
+    // comp_2 Vouchers
+    { id: "v3", companyId: "comp_2", voucherNumber: "RCP-2026-088", voucherDate: "2026-07-22", voucherTypeName: "Receipt", partyName: "Apex Retail Solutions", taxableAmount: 0, totalAmount: 177000, validationStatus: "BALANCED", status: "APPROVED", narration: "NEFT Payment received against INV-2026-001" },
+    { id: "v8", companyId: "comp_2", voucherNumber: "INV-2026-B01", voucherDate: "2026-07-24", voucherTypeName: "Sales", partyName: "Apex Retail Solutions", taxableAmount: 310000, igstAmount: 55800, totalAmount: 365800, validationStatus: "BALANCED", status: "APPROVED", narration: "Logistics fleet dispatch & warehousing fee" },
+    { id: "v9", companyId: "comp_2", voucherNumber: "PUR-2026-B05", voucherDate: "2026-07-27", voucherTypeName: "Purchase", partyName: "Global Tech Logistics India", taxableAmount: 140000, cgstAmount: 12600, sgstAmount: 12600, totalAmount: 165200, validationStatus: "BALANCED", status: "APPROVED", narration: "Warehouse lease & forklift fuel charges" },
+
+    // comp_3 Vouchers
+    { id: "v4", companyId: "comp_3", voucherNumber: "PAY-2026-042", voucherDate: "2026-07-24", voucherTypeName: "Payment", partyName: "InfraSoft Services LLP", taxableAmount: 0, totalAmount: 50000, validationStatus: "BALANCED", status: "PENDING", narration: "Advance payment against upcoming cloud deployment contract" },
+    { id: "v10", companyId: "comp_3", voucherNumber: "INV-2026-C01", voucherDate: "2026-07-26", voucherTypeName: "Sales", partyName: "Apex Infotech & Solutions", taxableAmount: 480000, igstAmount: 86400, totalAmount: 566400, validationStatus: "BALANCED", status: "APPROVED", narration: "Custom AI pipeline development & model tuning" },
+    { id: "v11", companyId: "comp_3", voucherNumber: "PUR-2026-C02", voucherDate: "2026-07-29", voucherTypeName: "Purchase", partyName: "InfraSoft Services LLP", taxableAmount: 200000, cgstAmount: 18000, sgstAmount: 18000, totalAmount: 236000, validationStatus: "BALANCED", status: "APPROVED", narration: "Sub-contracted developer staffing charges" },
+
+    // comp_4 Vouchers
+    { id: "v5", companyId: "comp_4", voucherNumber: "PUR-2026-108", voucherDate: "2026-07-28", voucherTypeName: "Purchase", partyName: "CloudNet Systems Pvt Ltd", taxableAmount: 85000, igstAmount: 15300, totalAmount: 100300, validationStatus: "UNBALANCED", validationErrors: ["Tax calculation discrepancy of ₹10.00 between ledger lines"], status: "DRAFT", narration: "Monthly AWS Cloud Infrastructure recurring bill" },
+    { id: "v12", companyId: "comp_4", voucherNumber: "INV-2026-D01", voucherDate: "2026-07-29", voucherTypeName: "Sales", partyName: "Vanguard Retail Ventures", taxableAmount: 95000, cgstAmount: 8550, sgstAmount: 8550, totalAmount: 112100, validationStatus: "BALANCED", status: "APPROVED", narration: "Retail POS software terminal license" },
+
+    // comp_5 Vouchers
+    { id: "v13", companyId: "comp_5", voucherNumber: "INV-2026-E01", voucherDate: "2026-07-30", voucherTypeName: "Sales", partyName: "Zenith Cloud Systems", taxableAmount: 620000, igstAmount: 111600, totalAmount: 731600, validationStatus: "BALANCED", status: "APPROVED", narration: "Enterprise cloud hosting contract renewal" },
+    { id: "v14", companyId: "comp_5", voucherNumber: "PUR-2026-E02", voucherDate: "2026-07-31", voucherTypeName: "Purchase", partyName: "CloudNet Systems Pvt Ltd", taxableAmount: 300000, igstAmount: 54000, totalAmount: 354000, validationStatus: "BALANCED", status: "APPROVED", narration: "Data center rack space & fiber link bandwidth" },
+  ],
+  documents: [
+    // comp_1 Documents
+    { id: "doc_1", companyId: "comp_1", originalFileName: "Tax_Invoice_INV_8891.pdf", mimeType: "application/pdf", byteSize: 345120, status: "EXTRACTED", storedFilePath: "/storage/invoices/2026/07/Tax_Invoice_INV_8891.pdf", importedAt: "2026-07-28T10:15:00Z", vendorName: "Acme Trading Co.", gstin: "27AABCU9603R1ZN", invoiceNumber: "INV-2026-881", date: "2026-07-28", subtotal: 172500, totalTax: 31050, grandTotal: 203550, validationStatus: "BALANCED", confidence: 0.985 },
+    { id: "doc_4", companyId: "comp_1", originalFileName: "Vendor_Bill_Stationery_Mart.pdf", mimeType: "application/pdf", byteSize: 185000, status: "EXTRACTED", storedFilePath: "/storage/invoices/2026/07/Stationery_Mart.pdf", importedAt: "2026-07-25T11:00:00Z", vendorName: "Capital Stationery Mart", gstin: "27AAACM8819L1Z2", invoiceNumber: "CSM-1044", date: "2026-07-25", subtotal: 15000, totalTax: 2700, grandTotal: 17700, validationStatus: "BALANCED", confidence: 0.992 },
+    { id: "doc_5", companyId: "comp_1", originalFileName: "Hardware_Procurement_TechCorp.png", mimeType: "image/png", byteSize: 840000, status: "IMPORTED", storedFilePath: "/storage/invoices/2026/07/TechCorp_Bill.png", importedAt: "2026-07-20T16:45:00Z", vendorName: "TechCorp India Solutions", gstin: "27AABCT8891Q1ZP", invoiceNumber: "TC-2026-901", date: "2026-07-20", subtotal: 100000, totalTax: 18000, grandTotal: 118000, validationStatus: "BALANCED", confidence: 0.965 },
+
+    // comp_2 Documents
+    { id: "doc_2", companyId: "comp_2", originalFileName: "Bank_Statement_HDFC_July_2026.pdf", mimeType: "application/pdf", byteSize: 1240500, status: "EXTRACTED", storedFilePath: "/storage/bank/2026/07/HDFC_July_2026.pdf", importedAt: "2026-07-29T14:20:00Z", vendorName: "HDFC Bank", gstin: "29BBBCU8812K1Z4", invoiceNumber: "STMT-07", date: "2026-07-29", subtotal: 0, totalTax: 0, grandTotal: 0, validationStatus: "BALANCED", confidence: 0.990 },
+    { id: "doc_6", companyId: "comp_2", originalFileName: "Warehouse_Lease_Invoice_Global.pdf", mimeType: "application/pdf", byteSize: 420000, status: "EXTRACTED", storedFilePath: "/storage/invoices/2026/07/Warehouse_Lease.pdf", importedAt: "2026-07-27T09:30:00Z", vendorName: "Global Tech Logistics India", gstin: "29BBBCU8812K1Z4", invoiceNumber: "WHL-2026-05", date: "2026-07-27", subtotal: 140000, totalTax: 25200, grandTotal: 165200, validationStatus: "BALANCED", confidence: 0.980 },
+
+    // comp_3 Documents
+    { id: "doc_3", companyId: "comp_3", originalFileName: "Vendor_Bill_InfraSoft_9921.pdf", mimeType: "application/pdf", byteSize: 512000, status: "IMPORTED", storedFilePath: "/storage/invoices/2026/07/Vendor_Bill_InfraSoft.pdf", importedAt: "2026-07-30T09:00:00Z", vendorName: "InfraSoft Services LLP", gstin: "27AAACG9921P1Z3", invoiceNumber: "INF-2026-041", date: "2026-07-22", subtotal: 200000, totalTax: 36000, grandTotal: 236000, validationStatus: "BALANCED", confidence: 0.970 },
+    { id: "doc_7", companyId: "comp_3", originalFileName: "Cloud_Deployment_Advance_Receipt.pdf", mimeType: "application/pdf", byteSize: 290000, status: "EXTRACTED", storedFilePath: "/storage/receipts/2026/07/Adv_Receipt.pdf", importedAt: "2026-07-24T15:10:00Z", vendorName: "InfraSoft Services LLP", gstin: "27AAACG9921P1Z3", invoiceNumber: "REC-2026-99", date: "2026-07-24", subtotal: 50000, totalTax: 0, grandTotal: 50000, validationStatus: "BALANCED", confidence: 0.988 },
+
+    // comp_4 Documents
+    { id: "doc_8", companyId: "comp_4", originalFileName: "AWS_Cloud_Infrastructure_Bill.pdf", mimeType: "application/pdf", byteSize: 610000, status: "EXTRACTED", storedFilePath: "/storage/invoices/2026/07/AWS_Bill.pdf", importedAt: "2026-07-28T12:00:00Z", vendorName: "CloudNet Systems Pvt Ltd", gstin: "29AAACC1120K1Z2", invoiceNumber: "PUR-2026-108", date: "2026-07-28", subtotal: 85000, totalTax: 15300, grandTotal: 100300, validationStatus: "UNBALANCED", confidence: 0.940 },
+    { id: "doc_9", companyId: "comp_4", originalFileName: "POS_Thermal_Printers_Invoice.pdf", mimeType: "application/pdf", byteSize: 310000, status: "EXTRACTED", storedFilePath: "/storage/invoices/2026/07/POS_Printers.pdf", importedAt: "2026-07-29T10:20:00Z", vendorName: "Vanguard Retail Ventures", gstin: "27AABCV1192P1Z8", invoiceNumber: "INV-2026-D01", date: "2026-07-29", subtotal: 95000, totalTax: 17100, grandTotal: 112100, validationStatus: "BALANCED", confidence: 0.978 },
+
+    // comp_5 Documents
+    { id: "doc_10", companyId: "comp_5", originalFileName: "Data_Center_Rack_Space_Contract.pdf", mimeType: "application/pdf", byteSize: 980000, status: "EXTRACTED", storedFilePath: "/storage/invoices/2026/07/Data_Center_Bill.pdf", importedAt: "2026-07-31T08:45:00Z", vendorName: "CloudNet Systems Pvt Ltd", gstin: "36AAACZ5523E1Z9", invoiceNumber: "PUR-2026-E02", date: "2026-07-31", subtotal: 300000, totalTax: 54000, grandTotal: 354000, validationStatus: "BALANCED", confidence: 0.995 },
+  ],
+  bankTxs: [
+    // comp_1 Bank Transactions (SBI & HDFC)
+    { id: "tx_1", companyId: "comp_1", bankName: "SBI Current Account", transactionDate: "2026-07-25", valueDate: "2026-07-25", description: "NEFT-INB-ACME LOGISTICS PVT LTD-INVOICE CLEARANCE", referenceNo: "N19283019281", utrNumber: "SBIN20260725110", debit: 0, credit: 177000.0, balanceAmount: 1017000.0, reconciliationStatus: "RECONCILED" },
+    { id: "tx_2", companyId: "comp_1", bankName: "SBI Current Account", transactionDate: "2026-07-26", valueDate: "2026-07-26", description: "ACH-WTR-MAHADISCOM ELECTRICITY BILL-DR", referenceNo: "ACH-9821827", utrNumber: "MAHA20260726900", debit: 14500.0, credit: 0, balanceAmount: 1002500.0, reconciliationStatus: "UNRECONCILED" },
+    { id: "tx_11", companyId: "comp_1", bankName: "SBI Current Account", transactionDate: "2026-07-27", valueDate: "2026-07-27", description: "UPI-PAYMENT-OFFICE SUPPLIES MART", referenceNo: "UPI-8829102", utrNumber: "UPI20260727001", debit: 3500.0, credit: 0, balanceAmount: 999000.0, reconciliationStatus: "RECONCILED" },
+    { id: "tx_12", companyId: "comp_1", bankName: "SBI Current Account", transactionDate: "2026-07-28", valueDate: "2026-07-28", description: "NEFT-INB-ACME LOGISTICS PVT LTD-SLA CLEARANCE", referenceNo: "N2026072899", utrNumber: "SBIN20260728221", debit: 0, credit: 259600.0, balanceAmount: 1258600.0, reconciliationStatus: "RECONCILED" },
+    { id: "tx_13", companyId: "comp_1", bankName: "SBI Current Account", transactionDate: "2026-07-29", valueDate: "2026-07-29", description: "CHQ-PAY-CAPITAL STATIONERY MART-CHQ 10221", referenceNo: "CHQ-10221", utrNumber: "SBIN20260729440", debit: 17700.0, credit: 0, balanceAmount: 1240900.0, reconciliationStatus: "UNRECONCILED" },
+    { id: "tx_14", companyId: "comp_1", bankName: "SBI Current Account", transactionDate: "2026-07-30", valueDate: "2026-07-30", description: "CMS-VENDOR-TECHCORP INDIA-HARDWARE INVOICE", referenceNo: "CMS-99102", utrNumber: "ICIC20260730881", debit: 118000.0, credit: 0, balanceAmount: 1122900.0, reconciliationStatus: "RECONCILED" },
+    // Added mixed banks for comp_1
+    { id: "tx_21", companyId: "comp_1", bankName: "HDFC Bank", transactionDate: "2026-07-30", valueDate: "2026-07-30", description: "NEFT-CR-NEXUS INFOTECH-SUBSCRIPTION FEE", referenceNo: "N99102931", utrNumber: "HDFCN20260730112", debit: 0, credit: 88500.0, balanceAmount: 645000.0, reconciliationStatus: "RECONCILED" },
+    { id: "tx_22", companyId: "comp_1", bankName: "ICICI Bank", transactionDate: "2026-07-31", valueDate: "2026-07-31", description: "RTGS-DR-PIONEER ENTERPRISES-BULK PURCHASE", referenceNo: "R88291023", utrNumber: "ICICR20260731551", debit: 320000.0, credit: 0, balanceAmount: 325000.0, reconciliationStatus: "UNRECONCILED" },
+
+    // comp_2 Bank Transactions (HDFC & ICICI)
+    { id: "tx_3", companyId: "comp_2", bankName: "HDFC Bank", transactionDate: "2026-07-27", valueDate: "2026-07-27", description: "CMS-PAYMENT-TECHCORP INDIA SOLUTIONS-VENDOR PAY", referenceNo: "CMS-551029", utrNumber: "ICICN20260727004", debit: 118000.0, credit: 0, balanceAmount: 884500.0, reconciliationStatus: "RECONCILED" },
+    { id: "tx_4", companyId: "comp_2", bankName: "HDFC Bank", transactionDate: "2026-07-28", valueDate: "2026-07-28", description: "IMPS-CR-APEX RETAIL SOLUTIONS-ADVANCE BILLED", referenceNo: "IMPS-6629102", utrNumber: "SBIIN20260728991", debit: 0, credit: 98000.0, balanceAmount: 982500.0, reconciliationStatus: "UNRECONCILED" },
+    { id: "tx_15", companyId: "comp_2", bankName: "HDFC Bank", transactionDate: "2026-07-29", valueDate: "2026-07-29", description: "RTGS-INB-APEX RETAIL SOLUTIONS-FLEET DISPATCH", referenceNo: "R9920192", utrNumber: "HDFCR20260729330", debit: 0, credit: 365800.0, balanceAmount: 1348300.0, reconciliationStatus: "RECONCILED" },
+    { id: "tx_16", companyId: "comp_2", bankName: "HDFC Bank", transactionDate: "2026-07-30", valueDate: "2026-07-30", description: "NEFT-DR-GLOBAL TECH LOGISTICS-WAREHOUSE LEASE", referenceNo: "N8819201", utrNumber: "HDFCN20260730991", debit: 165200.0, credit: 0, balanceAmount: 1183100.0, reconciliationStatus: "UNRECONCILED" },
+    // Added mixed banks for comp_2
+    { id: "tx_23", companyId: "comp_2", bankName: "Axis Bank", transactionDate: "2026-07-31", valueDate: "2026-07-31", description: "UPI-CR-STRIPE PAYMENTS-ONLINE SETTLEMENT", referenceNo: "UPI-449102", utrNumber: "AXISI20260731771", debit: 0, credit: 145000.0, balanceAmount: 920000.0, reconciliationStatus: "RECONCILED" },
+    { id: "tx_24", companyId: "comp_2", bankName: "SBI Current Account", transactionDate: "2026-07-31", valueDate: "2026-07-31", description: "CHQ-CLR-VERTEX CORP-CHQ 99812", referenceNo: "CHQ-99812", utrNumber: "SBIN20260731332", debit: 55000.0, credit: 0, balanceAmount: 865000.0, reconciliationStatus: "UNRECONCILED" },
+
+    // comp_3 Bank Transactions (ICICI Bank)
+    { id: "tx_5", companyId: "comp_3", bankName: "ICICI Bank", transactionDate: "2026-07-29", valueDate: "2026-07-29", description: "POS-AMAZON WEB SERVICES INDIA-MONTHLY CLOUD", referenceNo: "AWS-3310928", utrNumber: "AWSN20260729111", debit: 100300.0, credit: 0, balanceAmount: 882200.0, reconciliationStatus: "RECONCILED" },
+    { id: "tx_6", companyId: "comp_3", bankName: "ICICI Bank", transactionDate: "2026-07-29", valueDate: "2026-07-29", description: "RTGS-INB-GLOBAL INDUSTRIES CORP-RAW MAT PUR", referenceNo: "R8820319203", utrNumber: "ICICR20260729445", debit: 450000.0, credit: 0, balanceAmount: 2450000.0, reconciliationStatus: "UNRECONCILED" },
+    { id: "tx_17", companyId: "comp_3", bankName: "ICICI Bank", transactionDate: "2026-07-30", valueDate: "2026-07-30", description: "NEFT-INB-APEX INFOTECH-CUSTOM AI DEVELOPMENT", referenceNo: "N331092", utrNumber: "ICICN20260730005", debit: 0, credit: 566400.0, balanceAmount: 3016400.0, reconciliationStatus: "RECONCILED" },
+    { id: "tx_18", companyId: "comp_3", bankName: "ICICI Bank", transactionDate: "2026-07-31", valueDate: "2026-07-31", description: "CMS-DR-INFRASOFT SERVICES-DEV STAFFING", referenceNo: "CMS-77192", utrNumber: "ICICN20260731441", debit: 236000.0, credit: 0, balanceAmount: 2780400.0, reconciliationStatus: "UNRECONCILED" },
+    // Added mixed banks for comp_3
+    { id: "tx_25", companyId: "comp_3", bankName: "HDFC Bank", transactionDate: "2026-07-31", valueDate: "2026-07-31", description: "NEFT-INB-STRATEGIC CONSULTING-FEES", referenceNo: "N7718291", utrNumber: "HDFCN20260731889", debit: 0, credit: 210000.0, balanceAmount: 1540000.0, reconciliationStatus: "RECONCILED" },
+    { id: "tx_26", companyId: "comp_3", bankName: "Axis Bank", transactionDate: "2026-07-31", valueDate: "2026-07-31", description: "IMPS-DR-OFFICE RENT-JULY", referenceNo: "IMPS-33102", utrNumber: "AXISI20260731440", debit: 125000.0, credit: 0, balanceAmount: 1415000.0, reconciliationStatus: "RECONCILED" },
+
+    // comp_4 Bank Transactions (State Bank of India)
+    { id: "tx_7", companyId: "comp_4", bankName: "State Bank of India", transactionDate: "2026-07-30", valueDate: "2026-07-30", description: "CHQ-CLR-BLUE STAR CORP-CHQ NO 440211", referenceNo: "CHQ-440211", utrNumber: "ICICQ20260730101", debit: 0, credit: 82500.0, balanceAmount: 2532500.0, reconciliationStatus: "RECONCILED" },
+    { id: "tx_8", companyId: "comp_4", bankName: "State Bank of India", transactionDate: "2026-07-30", valueDate: "2026-07-30", description: "TDS-REV-INCOME TAX DEPT RESIDUAL INTEREST", referenceNo: "REF-TDS-2026A", utrNumber: "SBIN20260730559", debit: 0, credit: 12400.0, balanceAmount: 512400.0, reconciliationStatus: "RECONCILED" },
+    { id: "tx_19", companyId: "comp_4", bankName: "State Bank of India", transactionDate: "2026-07-31", valueDate: "2026-07-31", description: "IMPS-CR-VANGUARD RETAIL-POS TERMINAL LICENSE", referenceNo: "IMPS-99210", utrNumber: "SBIN20260731008", debit: 0, credit: 112100.0, balanceAmount: 624500.0, reconciliationStatus: "UNRECONCILED" },
+    // Added mixed banks for comp_4
+    { id: "tx_27", companyId: "comp_4", bankName: "ICICI Bank", transactionDate: "2026-07-31", valueDate: "2026-07-31", description: "RTGS-INB-NEXGEN SOLUTIONS-LICENSE FEE", referenceNo: "R1192019", utrNumber: "ICICR20260731112", debit: 0, credit: 410000.0, balanceAmount: 2100000.0, reconciliationStatus: "RECONCILED" },
+    { id: "tx_28", companyId: "comp_4", bankName: "HDFC Bank", transactionDate: "2026-07-31", valueDate: "2026-07-31", description: "CMS-DR-EXPRESS COURIER SERVICES-SHIPPING", referenceNo: "CMS-88192", utrNumber: "HDFCN20260731554", debit: 34000.0, credit: 0, balanceAmount: 2066000.0, reconciliationStatus: "UNRECONCILED" },
+
+    // comp_5 Bank Transactions (Axis Bank)
+    { id: "tx_9", companyId: "comp_5", bankName: "Axis Bank", transactionDate: "2026-07-31", valueDate: "2026-07-31", description: "OWN-ACC-TRANSFER FROM AXIS CURRENT ACC-SWEEP", referenceNo: "SWP-90021", utrNumber: "SBIN20260731882", debit: 0, credit: 300000.0, balanceAmount: 812400.0, reconciliationStatus: "RECONCILED" },
+    { id: "tx_10", companyId: "comp_5", bankName: "Axis Bank", transactionDate: "2026-07-31", valueDate: "2026-07-31", description: "FOREX-STTL-REMITTANCE OUTWARD-STRIPE INC", referenceNo: "FX-ST-88129", utrNumber: "AXISR20260731002", debit: 654000.0, credit: 0, balanceAmount: 1146000.0, reconciliationStatus: "UNRECONCILED" },
+    { id: "tx_20", companyId: "comp_5", bankName: "Axis Bank", transactionDate: "2026-07-31", valueDate: "2026-07-31", description: "RTGS-CR-ZENITH CLOUD SYSTEMS-ENTERPRISE RENEWAL", referenceNo: "R7719201", utrNumber: "AXISR20260731990", debit: 0, credit: 731600.0, balanceAmount: 1877600.0, reconciliationStatus: "RECONCILED" },
+    // Added mixed banks for comp_5
+    { id: "tx_29", companyId: "comp_5", bankName: "SBI Current Account", transactionDate: "2026-07-31", valueDate: "2026-07-31", description: "NEFT-INB-QUANTUM ANALYTICS-ADVISORY", referenceNo: "N6619201", utrNumber: "SBIN20260731667", debit: 0, credit: 500000.0, balanceAmount: 1422400.0, reconciliationStatus: "RECONCILED" },
+    { id: "tx_30", companyId: "comp_5", bankName: "ICICI Bank", transactionDate: "2026-07-31", valueDate: "2026-07-31", description: "UPI-DR-CLOUD INFRA HOSTING-SERVER COST", referenceNo: "UPI-77192", utrNumber: "ICICI20260731993", debit: 45000.0, credit: 0, balanceAmount: 1377400.0, reconciliationStatus: "UNRECONCILED" }
+],
+  gstr2bRecords: [
+    // comp_1 GSTR-2B
+    { id: "gstr_1", companyId: "comp_1", supplierGstin: "27AABCT8891Q1ZP", supplierName: "TechCorp India Solutions", invoiceNumber: "TC-2026-901", invoiceDate: "2026-07-20", taxableValue: 100000.0, cgst: 9000.0, sgst: 9000.0, igst: 0.0, itcAvailability: "Available", matchStatus: "MATCHED" },
+    { id: "gstr_5", companyId: "comp_1", supplierGstin: "27AAACM8819L1Z2", supplierName: "Capital Stationery Mart", invoiceNumber: "CSM-1044", invoiceDate: "2026-07-25", taxableValue: 15000.0, cgst: 1350.0, sgst: 1350.0, igst: 0.0, itcAvailability: "Available", matchStatus: "MATCHED" },
+
+    // comp_2 GSTR-2B
+    { id: "gstr_2", companyId: "comp_2", supplierGstin: "27AAACG9921P1Z3", supplierName: "InfraSoft Services LLP", invoiceNumber: "INF-2026-041", invoiceDate: "2026-07-22", taxableValue: 200000.0, cgst: 18000.0, sgst: 18000.0, igst: 0.0, itcAvailability: "Available", matchStatus: "MATCHED" },
+    { id: "gstr_6", companyId: "comp_2", supplierGstin: "29BBBCU8812K1Z4", supplierName: "Global Tech Logistics India", invoiceNumber: "WHL-2026-05", invoiceDate: "2026-07-27", taxableValue: 140000.0, cgst: 12600.0, sgst: 12600.0, igst: 0.0, itcAvailability: "Available", matchStatus: "MATCHED" },
+
+    // comp_3 GSTR-2B
+    { id: "gstr_3", companyId: "comp_3", supplierGstin: "29AAACC1120K1Z2", supplierName: "CloudNet Systems Pvt Ltd", invoiceNumber: "CNS-88912", invoiceDate: "2026-07-28", taxableValue: 85000.0, cgst: 0.0, sgst: 0.0, igst: 15300.0, itcAvailability: "Available", matchStatus: "MISMATCH" },
+
+    // comp_4 GSTR-2B
+    { id: "gstr_4", companyId: "comp_4", supplierGstin: "07AAAAA0000A1Z5", supplierName: "Capital Stationery Mart", invoiceNumber: "CSM-102", invoiceDate: "2026-07-29", taxableValue: 12000.0, cgst: 1080.0, sgst: 1080.0, igst: 0.0, itcAvailability: "Ineligible - Sec 17(5)", matchStatus: "MISMATCH" },
+
+    // comp_5 GSTR-2B
+    { id: "gstr_7", companyId: "comp_5", supplierGstin: "36AAACZ5523E1Z9", supplierName: "CloudNet Systems Pvt Ltd", invoiceNumber: "PUR-2026-E02", invoiceDate: "2026-07-31", taxableValue: 300000.0, cgst: 0.0, sgst: 0.0, igst: 54000.0, itcAvailability: "Available", matchStatus: "MATCHED" },
+  ],
+  syncCommands: [
+    {
+      commandId: "cmd_sync_9918231",
+      commandType: "VOUCHER_CREATE",
+      status: "DONE",
+      attempts: 1,
+      lastError: null,
+      createdAt: "2026-07-30T10:12:00Z",
+      updatedAt: "2026-07-30T10:12:05Z",
+      payloadJson: JSON.stringify({ voucherType: "Sales", voucherNumber: "INV-2026-001", amount: 177000 }),
+    },
+    {
+      commandId: "cmd_sync_9918232",
+      commandType: "VOUCHER_CREATE",
+      status: "DONE",
+      attempts: 1,
+      lastError: null,
+      createdAt: "2026-07-30T11:05:00Z",
+      updatedAt: "2026-07-30T11:05:04Z",
+      payloadJson: JSON.stringify({ voucherType: "Purchase", voucherNumber: "PUR-2026-101", amount: 118000 }),
+    },
+    {
+      commandId: "cmd_sync_9918233",
+      commandType: "LEDGER_SYNC",
+      status: "QUEUED",
+      attempts: 0,
+      lastError: null,
+      createdAt: "2026-07-30T15:40:00Z",
+      updatedAt: "2026-07-30T15:40:00Z",
+      payloadJson: JSON.stringify({ companyId: "comp_1", totalLedgersMapped: 17 }),
+    },
+    {
+      commandId: "cmd_sync_9918234",
+      commandType: "VOUCHER_CREATE",
+      status: "FAILED",
+      attempts: 3,
+      lastError: "Tally Server Error: Line item ledger 'Cloud Expense' not found in active company.",
+      createdAt: "2026-07-30T16:00:00Z",
+      updatedAt: "2026-07-30T16:02:30Z",
+      payloadJson: JSON.stringify({ voucherType: "Purchase", voucherNumber: "PUR-2026-108", amount: 100300 }),
+    },
+  ],
+};
+
+// --- Exported Module Mock Datasets ---
+
+export const MOCK_GSTR2B_RECORDS = [
+  { id: "g2b_001", supplierName: "Acme Trading Co. Pvt Ltd", supplierGstin: "27AABCU9603R1ZN", invoiceNumber: "INV-2026-8891", invoiceDate: "2026-07-28", taxableValue: 172500, cgst: 15525, sgst: 15525, igst: 0, totalAmount: 203550, itcAvailability: "Available", matchStatus: "MATCHED" },
+  { id: "g2b_002", supplierName: "Global Tech Logistics Ltd", supplierGstin: "27AABCG1234F1Z5", invoiceNumber: "INV-2026-4412", invoiceDate: "2026-07-26", taxableValue: 45000, cgst: 4050, sgst: 4050, igst: 0, totalAmount: 53100, itcAvailability: "Available", matchStatus: "MATCHED" },
+  { id: "g2b_003", supplierName: "Enterprise Hardware Corp", supplierGstin: "29AABCE5581K1Z9", invoiceNumber: "INV-2026-9901", invoiceDate: "2026-07-24", taxableValue: 120000, cgst: 0, sgst: 0, igst: 21600, totalAmount: 141600, itcAvailability: "Restricted - Sec 17(5)", matchStatus: "TAX_MISMATCH" },
+];
+
+export const MOCK_GSTR1_OUTWARD_SUMMARY = [
+  { section: "4A, 4B - B2B Invoices", voucherCount: 14, taxableValue: 485000, cgst: 43650, sgst: 43650, igst: 0, totalTax: 87300 },
+  { section: "5A, 5B - B2C Large Invoices", voucherCount: 2, taxableValue: 250000, cgst: 0, sgst: 0, igst: 45000, totalTax: 45000 },
+  { section: "7 - B2C Small Invoices", voucherCount: 38, taxableValue: 125000, cgst: 11250, sgst: 11250, igst: 0, totalTax: 22500 },
+  { section: "9B - Credit / Debit Notes (CDNR)", voucherCount: 1, taxableValue: -15000, cgst: -1350, sgst: -1350, igst: 0, totalTax: -2700 },
+  { section: "12 - HSN Summary of Outward Supplies", voucherCount: 55, taxableValue: 845000, cgst: 53550, sgst: 53550, igst: 45000, totalTax: 152100 },
+];
+
+export const MOCK_GST_DISCREPANCIES = [
+  { id: "disc_01", supplierName: "Enterprise Hardware Corp", gstin: "29AABCE5581K1Z9", invNo: "INV-2026-9901", bookTax: 21600, portalTax: 18000, diffAmount: 3600, discrepancyType: "Tax Rate Mismatch (18% vs 15%)" },
+  { id: "disc_02", supplierName: "Metro Office Supplies", gstin: "27AAACM8819L1Z2", invNo: "INV-2026-1044", bookTax: 5400, portalTax: 0, diffAmount: 5400, discrepancyType: "Missing in Portal (Supplier GSTR-1 Pending)" },
+];
+
+export const MOCK_VENDOR_COMPLIANCE = [
+  { id: "vnd_01", supplierName: "Acme Trading Co. Pvt Ltd", gstin: "27AABCU9603R1ZN", totalInvoices: 24, filingRate: "98.5%", riskRating: "LOW_RISK", pendingItc: 0 },
+  { id: "vnd_02", supplierName: "Global Tech Logistics Ltd", gstin: "27AABCG1234F1Z5", totalInvoices: 12, filingRate: "95.0%", riskRating: "LOW_RISK", pendingItc: 0 },
+  { id: "vnd_03", supplierName: "Enterprise Hardware Corp", gstin: "29AABCE5581K1Z9", totalInvoices: 8, filingRate: "72.0%", riskRating: "HIGH_RISK", pendingItc: 21600 },
+];
+
+export const MOCK_STATUTORY_AUDIT_LIST = [
+  { returnType: "GSTR-1 Outward Sales Return", description: "B2B & B2C Outward Tax Liability", amount: 152100, status: "✓ Filed On-Time", ruleCompliance: "Compliant" },
+  { returnType: "GSTR-2B Inward ITC Register", description: "Eligible Input Tax Credit Pool", amount: 31050, status: "✓ Reconciled", ruleCompliance: "Rule 36(4) Cap OK" },
+  { returnType: "GSTR-3B Monthly Return", description: "Net Cash Tax Payable via Portal Ledger", amount: 121050, status: "✓ Cash Paid", ruleCompliance: "Challan Verified" },
+];
+
+export const MOCK_CONNECTOR_OUTBOX_LOG = [
+  { id: "cmd_001", action: "SYNC_POST_VOUCHER", type: "Sales Invoice #INV-8891", attempts: 1, latency: "4ms", status: "COMPLETED", createdAt: "2026-07-28 14:32:05" },
+  { id: "cmd_002", action: "FETCH_MASTER_LEDGERS", type: "Chart of Accounts Sync", attempts: 1, latency: "2ms", status: "COMPLETED", createdAt: "2026-07-28 14:30:12" },
+  { id: "cmd_003", action: "RECONCILE_BANK_FEED", type: "SBI Statement #3889", attempts: 1, latency: "6ms", status: "COMPLETED", createdAt: "2026-07-28 14:25:40" },
+];
+
+export const MOCK_AUTO_MAPPING_RULES = [
+  { id: "rule_01", keyword: "NEFT CREDIT - ACME", targetLedger: "Acme Trading Co.", voucherType: "Receipt", priority: 1, isAutoPost: true },
+  { id: "rule_02", keyword: "UPI DEBIT - SUPPLIES", targetLedger: "Office Supplies A/c", voucherType: "Payment", priority: 2, isAutoPost: false },
+  { id: "rule_03", keyword: "ACH DEBIT - ELECTRICITY", targetLedger: "Electricity & Utility Charges", voucherType: "Payment", priority: 3, isAutoPost: true },
+  { id: "rule_04", keyword: "CMS PAY - TECHCORP", targetLedger: "TechCorp India Solutions", voucherType: "Payment", priority: 4, isAutoPost: true },
+  { id: "rule_05", keyword: "POS DEBIT - AWS CLOUD", targetLedger: "AWS Cloud Infrastructure Charges", voucherType: "Payment", priority: 5, isAutoPost: true },
+];
+
+export const MOCK_STOCK_ITEMS = [
+  // comp_1 Stock Items (IT Hardware & Office Equipment)
+  { id: "stk_001", companyId: "comp_1", itemName: "Dell Latitude 5540 Laptop i7 16GB", category: "Hardware", hsnCode: "8471", stockQty: 18, unit: "Pcs", unitRate: 65000, totalValue: 1170000 },
+  { id: "stk_002", companyId: "comp_1", itemName: "Logitech MX Master 3S Wireless Mouse", category: "Peripherals", hsnCode: "8471", stockQty: 45, unit: "Pcs", unitRate: 8500, totalValue: 382500 },
+  { id: "stk_003", companyId: "comp_1", itemName: "Samsung 27-Inch 4K IPS Ergonomic Monitor", category: "Peripherals", hsnCode: "8528", stockQty: 12, unit: "Pcs", unitRate: 24000, totalValue: 288000 },
+  { id: "stk_009", companyId: "comp_1", itemName: "Apple MacBook Pro 14 M3 Pro 18GB", category: "Hardware", hsnCode: "8471", stockQty: 8, unit: "Pcs", unitRate: 195000, totalValue: 1560000 },
+  { id: "stk_010", companyId: "comp_1", itemName: "HP LaserJet Pro MFP Wireless Printer", category: "Peripherals", hsnCode: "8443", stockQty: 15, unit: "Pcs", unitRate: 32000, totalValue: 480000 },
+  { id: "stk_011", companyId: "comp_1", itemName: "APC Smart-UPS 1500VA LCD 230V", category: "Power Systems", hsnCode: "8504", stockQty: 20, unit: "Pcs", unitRate: 42000, totalValue: 840000 },
+  { id: "stk_012", companyId: "comp_1", itemName: "Keychron K2 Wireless Mechanical Keyboard", category: "Peripherals", hsnCode: "8471", stockQty: 30, unit: "Pcs", unitRate: 7500, totalValue: 225000 },
+  { id: "stk_013", companyId: "comp_1", itemName: "Sony WH-1000XM5 Noise Canceling Headset", category: "Audio Accessories", hsnCode: "8518", stockQty: 16, unit: "Pcs", unitRate: 26000, totalValue: 416000 },
+  { id: "stk_014", companyId: "comp_1", itemName: "Anker 10-in-1 USB-C Thunderbolt 4 Hub", category: "Peripherals", hsnCode: "8471", stockQty: 50, unit: "Pcs", unitRate: 12500, totalValue: 625000 },
+  { id: "stk_015", companyId: "comp_1", itemName: "Seagate Expansion 4TB External HDD", category: "Storage", hsnCode: "8471", stockQty: 35, unit: "Pcs", unitRate: 8900, totalValue: 311500 },
+  { id: "stk_016", companyId: "comp_1", itemName: "Samsung 980 PRO 2TB NVMe PCIe 4.0 SSD", category: "Storage", hsnCode: "8471", stockQty: 40, unit: "Pcs", unitRate: 16500, totalValue: 660000 },
+  { id: "stk_017", companyId: "comp_1", itemName: "Ergonomic Mesh Office Swivel Chair", category: "Office Furniture", hsnCode: "9401", stockQty: 25, unit: "Pcs", unitRate: 18500, totalValue: 462500 },
+  { id: "stk_018", companyId: "comp_1", itemName: "Motorized Electric Height Adjustable Desk", category: "Office Furniture", hsnCode: "9403", stockQty: 10, unit: "Pcs", unitRate: 35000, totalValue: 350000 },
+  { id: "stk_019", companyId: "comp_1", itemName: "Logitech Brio 4K Ultra HD Webcam", category: "Peripherals", hsnCode: "8525", stockQty: 22, unit: "Pcs", unitRate: 17000, totalValue: 374000 },
+  { id: "stk_020", companyId: "comp_1", itemName: "Blue Yeti USB Condenser Microphone", category: "Audio Accessories", hsnCode: "8518", stockQty: 14, unit: "Pcs", unitRate: 11500, totalValue: 161000 },
+  { id: "stk_021", companyId: "comp_1", itemName: "Ubiquiti UniFi 6 Pro Access Point", category: "Networking", hsnCode: "8517", stockQty: 18, unit: "Pcs", unitRate: 16800, totalValue: 302400 },
+  { id: "stk_022", companyId: "comp_1", itemName: "Cat6A Shielded Ethernet Cable Spool 305m", category: "Networking", hsnCode: "8544", stockQty: 15, unit: "Rolls", unitRate: 9800, totalValue: 147000 },
+  { id: "stk_023", companyId: "comp_1", itemName: "CyberPower 1200W Rackmount PDU Strip", category: "Power Systems", hsnCode: "8537", stockQty: 12, unit: "Pcs", unitRate: 14500, totalValue: 174000 },
+  { id: "stk_024", companyId: "comp_1", itemName: "Crucial RAM 32GB DDR5 4800MHz SODIMM", category: "Components", hsnCode: "8473", stockQty: 60, unit: "Pcs", unitRate: 7800, totalValue: 468000 },
+  { id: "stk_025", companyId: "comp_1", itemName: "ASUS ROG Swift 32-Inch Gaming Monitor", category: "Peripherals", hsnCode: "8528", stockQty: 6, unit: "Pcs", unitRate: 68000, totalValue: 408000 },
+
+  // comp_2 Stock Items (Global Logistics & Heavy Machinery)
+  { id: "stk_004", companyId: "comp_2", itemName: "Logistics Heavy ISO Cargo Container 40ft", category: "Fleet & Warehousing", hsnCode: "8609", stockQty: 8, unit: "Units", unitRate: 185000, totalValue: 1480000 },
+  { id: "stk_005", companyId: "comp_2", itemName: "Electric Industrial Forklift 3-Ton Counterbalance", category: "Machinery", hsnCode: "8427", stockQty: 3, unit: "Units", unitRate: 450000, totalValue: 1350000 },
+  { id: "stk_026", companyId: "comp_2", itemName: "Heavy Duty Hydraulic Pallet Jack 2.5-Ton", category: "Warehousing", hsnCode: "8427", stockQty: 24, unit: "Units", unitRate: 18500, totalValue: 444000 },
+  { id: "stk_027", companyId: "comp_2", itemName: "Industrial Steel Selective Pallet Racking Bay", category: "Warehousing", hsnCode: "7308", stockQty: 40, unit: "Bays", unitRate: 32000, totalValue: 1280000 },
+  { id: "stk_028", companyId: "comp_2", itemName: "Stretch Wrap Machine Semi-Automatic Turntable", category: "Packaging", hsnCode: "8422", stockQty: 4, unit: "Units", unitRate: 165000, totalValue: 660000 },
+  { id: "stk_029", companyId: "comp_2", itemName: "Barcode Handheld Laser Scanner Wireless", category: "Logistics POS", hsnCode: "8471", stockQty: 35, unit: "Pcs", unitRate: 6400, totalValue: 224000 },
+  { id: "stk_030", companyId: "comp_2", itemName: "Industrial Thermal Transfer Label Printer 4-Inch", category: "Logistics POS", hsnCode: "8443", stockQty: 10, unit: "Pcs", unitRate: 48000, totalValue: 480000 },
+  { id: "stk_031", companyId: "comp_2", itemName: "Digital Platform Floor Scale 1000kg Capacity", category: "Machinery", hsnCode: "8423", stockQty: 8, unit: "Units", unitRate: 28000, totalValue: 224000 },
+  { id: "stk_032", companyId: "comp_2", itemName: "Heavy Vehicle GPS Fleet Tracking Beacon", category: "Fleet Electronics", hsnCode: "8526", stockQty: 60, unit: "Pcs", unitRate: 4500, totalValue: 270000 },
+  { id: "stk_033", companyId: "comp_2", itemName: "Heavy Cargo Ratchet Tie-Down Straps 50mm x 10m", category: "Warehousing", hsnCode: "5609", stockQty: 150, unit: "Pcs", unitRate: 1200, totalValue: 180000 },
+  { id: "stk_034", companyId: "comp_2", itemName: "Polypropylene Heavy Duty Strapping Roll 15mm", category: "Packaging", hsnCode: "3920", stockQty: 80, unit: "Rolls", unitRate: 2200, totalValue: 176000 },
+  { id: "stk_035", companyId: "comp_2", itemName: "Industrial Dock Leveler Hydraulic 6-Ton", category: "Warehousing", hsnCode: "8428", stockQty: 2, unit: "Units", unitRate: 310000, totalValue: 620000 },
+  { id: "stk_036", companyId: "comp_2", itemName: "Warehouse High Bay LED Lighting Fixture 200W", category: "Electrical", hsnCode: "9405", stockQty: 75, unit: "Pcs", unitRate: 5800, totalValue: 435000 },
+  { id: "stk_037", companyId: "comp_2", itemName: "Heavy Duty Wooden Pallet Euro Standard 1200x800", category: "Warehousing", hsnCode: "4415", stockQty: 500, unit: "Pcs", unitRate: 850, totalValue: 425000 },
+  { id: "stk_038", companyId: "comp_2", itemName: "Industrial Portable Diesel Generator 25kVA", category: "Machinery", hsnCode: "8502", stockQty: 2, unit: "Units", unitRate: 420000, totalValue: 840000 },
+  { id: "stk_039", companyId: "comp_2", itemName: "Forklift Traction Battery Pack 48V 500Ah", category: "Fleet Parts", hsnCode: "8507", stockQty: 5, unit: "Pcs", unitRate: 145000, totalValue: 725000 },
+  { id: "stk_040", companyId: "comp_2", itemName: "Automatic Container Door Locking Seal Lock", category: "Security", hsnCode: "8301", stockQty: 300, unit: "Pcs", unitRate: 350, totalValue: 105000 },
+  { id: "stk_041", companyId: "comp_2", itemName: "Commercial Air Curtain Fan Unit 4ft", category: "HVAC", hsnCode: "8414", stockQty: 12, unit: "Pcs", unitRate: 14500, totalValue: 174000 },
+  { id: "stk_042", companyId: "comp_2", itemName: "Heavy Duty Steel Wire Mesh Storage Cage", category: "Warehousing", hsnCode: "7326", stockQty: 45, unit: "Pcs", unitRate: 11000, totalValue: 495000 },
+  { id: "stk_043", companyId: "comp_2", itemName: "Cargo Tarpaulin Waterproof Cover 30ft x 20ft", category: "Packaging", hsnCode: "6306", stockQty: 25, unit: "Pcs", unitRate: 4800, totalValue: 120000 },
+  { id: "stk_044", companyId: "comp_2", itemName: "Heavy Duty Pneumatic Industrial Tire 7.00-12", category: "Fleet Parts", hsnCode: "4011", stockQty: 20, unit: "Pcs", unitRate: 9200, totalValue: 184000 },
+  { id: "stk_045", companyId: "comp_2", itemName: "Automated Parcel Conveyor Belt Segment 5m", category: "Machinery", hsnCode: "8428", stockQty: 6, unit: "Units", unitRate: 175000, totalValue: 1050000 },
+
+  // comp_3 Stock Items (Networking, Telecom & Software Infrastructure)
+  { id: "stk_006", companyId: "comp_3", itemName: "Cisco Catalyst 9300 48-Port PoE Switch", category: "Networking", hsnCode: "8517", stockQty: 6, unit: "Pcs", unitRate: 140000, totalValue: 840000 },
+  { id: "stk_046", companyId: "comp_3", itemName: "Fortinet FortiGate 100F Enterprise Firewall", category: "Security Hardware", hsnCode: "8517", stockQty: 4, unit: "Pcs", unitRate: 285000, totalValue: 1140000 },
+  { id: "stk_047", companyId: "comp_3", itemName: "Aruba AP-535 Wi-Fi 6 Unified Campus AP", category: "Networking", hsnCode: "8517", stockQty: 15, unit: "Pcs", unitRate: 42000, totalValue: 630000 },
+  { id: "stk_048", companyId: "comp_3", itemName: "Schneider Electric 42U Server Rack Cabinet", category: "Data Center", hsnCode: "9403", stockQty: 8, unit: "Units", unitRate: 62000, totalValue: 496000 },
+  { id: "stk_049", companyId: "comp_3", itemName: "Fiber Optic Patch Cord LC-LC Duplex 5m", category: "Networking", hsnCode: "8544", stockQty: 120, unit: "Pcs", unitRate: 850, totalValue: 102000 },
+  { id: "stk_050", companyId: "comp_3", itemName: "10G SFP+ Optical Transceiver Module SR 850nm", category: "Networking", hsnCode: "8517", stockQty: 40, unit: "Pcs", unitRate: 4500, totalValue: 180000 },
+  { id: "stk_051", companyId: "comp_3", itemName: "Synology RackStation RS3621xs+ 12-Bay NAS", category: "Storage", hsnCode: "8471", stockQty: 3, unit: "Units", unitRate: 340000, totalValue: 1020000 },
+  { id: "stk_052", companyId: "comp_3", itemName: "Western Digital Enterprise Enterprise 18TB HDD", category: "Storage", hsnCode: "8471", stockQty: 36, unit: "Pcs", unitRate: 31000, totalValue: 1116000 },
+  { id: "stk_053", companyId: "comp_3", itemName: "MikroTik CCR2116-12G-4S+ Cloud Core Router", category: "Networking", hsnCode: "8517", stockQty: 5, unit: "Pcs", unitRate: 88000, totalValue: 440000 },
+  { id: "stk_054", companyId: "comp_3", itemName: "Eaton 9PX 10kVA Online Double Conversion UPS", category: "Power Systems", hsnCode: "8504", stockQty: 2, unit: "Units", unitRate: 290000, totalValue: 580000 },
+  { id: "stk_055", companyId: "comp_3", itemName: "Tripp Lite 32-Port IP KVM Switch Console", category: "Data Center", hsnCode: "8517", stockQty: 3, unit: "Pcs", unitRate: 115000, totalValue: 345000 },
+  { id: "stk_056", companyId: "comp_3", itemName: "Fluke Networks LinkIQ Cable & Network Tester", category: "Diagnostic Tools", hsnCode: "9030", stockQty: 2, unit: "Pcs", unitRate: 185000, totalValue: 370000 },
+  { id: "stk_057", companyId: "comp_3", itemName: "Panduit 48-Port Cat6A Patch Panel High Density", category: "Networking", hsnCode: "8536", stockQty: 10, unit: "Pcs", unitRate: 14500, totalValue: 145000 },
+  { id: "stk_058", companyId: "comp_3", itemName: "Veritas NetBackup Appliance 1TB License Key", category: "Software Licenses", hsnCode: "9983", stockQty: 5, unit: "Keys", unitRate: 75000, totalValue: 375000 },
+  { id: "stk_059", companyId: "comp_3", itemName: "Nvidia RTX 6000 Ada Generation GPU 48GB", category: "AI Hardware", hsnCode: "8473", stockQty: 4, unit: "Pcs", unitRate: 680000, totalValue: 2720000 },
+  { id: "stk_060", companyId: "comp_3", itemName: "Supermicro 4U GPU Server Chassis Dual Socket", category: "Servers", hsnCode: "8471", stockQty: 2, unit: "Units", unitRate: 240000, totalValue: 480000 },
+  { id: "stk_061", companyId: "comp_3", itemName: "Intel Xeon Platinum 8480+ Processor 56-Core", category: "Components", hsnCode: "8542", stockQty: 4, unit: "Pcs", unitRate: 520000, totalValue: 2080000 },
+  { id: "stk_062", companyId: "comp_3", itemName: "Kingston Server Premier 64GB DDR5 ECC Registered", category: "Components", hsnCode: "8473", stockQty: 32, unit: "Pcs", unitRate: 22000, totalValue: 704000 },
+  { id: "stk_063", companyId: "comp_3", itemName: "Precision Optical Fiber Splicing Machine Kit", category: "Diagnostic Tools", hsnCode: "8515", stockQty: 1, unit: "Kit", unitRate: 240000, totalValue: 240000 },
+  { id: "stk_064", companyId: "comp_3", itemName: "Environmental Temperature Humidity Sensor IP", category: "IoT Sensors", hsnCode: "9025", stockQty: 25, unit: "Pcs", unitRate: 4800, totalValue: 120000 },
+
+  // comp_4 Stock Items (Retail POS Hardware & Consumables)
+  { id: "stk_007", companyId: "comp_4", itemName: "Thermal Billing Receipt Printers 80mm USB", category: "POS Hardware", hsnCode: "8443", stockQty: 25, unit: "Pcs", unitRate: 9500, totalValue: 237500 },
+  { id: "stk_065", companyId: "comp_4", itemName: "Heavy Duty Automatic Steel Cash Drawer 24V", category: "POS Hardware", hsnCode: "8303", stockQty: 30, unit: "Pcs", unitRate: 4200, totalValue: 126000 },
+  { id: "stk_066", companyId: "comp_4", itemName: "Touchscreen All-In-One POS Terminal 15-Inch", category: "POS Hardware", hsnCode: "8471", stockQty: 15, unit: "Units", unitRate: 45000, totalValue: 675000 },
+  { id: "stk_067", companyId: "comp_4", itemName: "Omnidirectional 2D Desktop Barcode Scanner", category: "POS Hardware", hsnCode: "8471", stockQty: 20, unit: "Pcs", unitRate: 11500, totalValue: 230000 },
+  { id: "stk_068", companyId: "comp_4", itemName: "Thermal Billing Paper Rolls 80mm x 50m Box of 50", category: "Consumables", hsnCode: "4811", stockQty: 100, unit: "Boxes", unitRate: 1450, totalValue: 145000 },
+  { id: "stk_069", companyId: "comp_4", itemName: "Zebra ZD421 Direct Thermal Label Printer", category: "POS Hardware", hsnCode: "8443", stockQty: 12, unit: "Pcs", unitRate: 28000, totalValue: 336000 },
+  { id: "stk_070", companyId: "comp_4", itemName: "Self-Adhesive Barcode Sticker Labels 50x25mm", category: "Consumables", hsnCode: "4821", stockQty: 200, unit: "Rolls", unitRate: 350, totalValue: 70000 },
+  { id: "stk_071", companyId: "comp_4", itemName: "Wireless Handheld Credit Card POS Terminal", category: "Payment Terminals", hsnCode: "8471", stockQty: 25, unit: "Pcs", unitRate: 16500, totalValue: 412500 },
+  { id: "stk_072", companyId: "comp_4", itemName: "Electronic Price Tag E-Ink Display 2.9-Inch", category: "Digital Signage", hsnCode: "8528", stockQty: 150, unit: "Pcs", unitRate: 1200, totalValue: 180000 },
+  { id: "stk_073", companyId: "comp_4", itemName: "Anti-Theft Electronic Article Security Antenna", category: "Retail Security", hsnCode: "8531", stockQty: 4, unit: "Sets", unitRate: 68000, totalValue: 272000 },
+  { id: "stk_074", companyId: "comp_4", itemName: "EAS Hard Security Tags Magnetic Lock 1000 Pcs", category: "Retail Security", hsnCode: "8531", stockQty: 10, unit: "Boxes", unitRate: 6500, totalValue: 65000 },
+  { id: "stk_075", companyId: "comp_4", itemName: "Customer Pole Display VFD 20x2 Characters", category: "POS Hardware", hsnCode: "8528", stockQty: 18, unit: "Pcs", unitRate: 3800, totalValue: 68400 },
+  { id: "stk_076", companyId: "comp_4", itemName: "Magnetic Stripe & Smart Chip Card Reader USB", category: "POS Hardware", hsnCode: "8471", stockQty: 40, unit: "Pcs", unitRate: 2400, totalValue: 96000 },
+  { id: "stk_077", companyId: "comp_4", itemName: "Retail Shopping Basket Plastic Stackable 20L", category: "Store Fixtures", hsnCode: "3926", stockQty: 300, unit: "Pcs", unitRate: 280, totalValue: 84000 },
+  { id: "stk_078", companyId: "comp_4", itemName: "Steel Supermarket Shelving Gondola Bay Double", category: "Store Fixtures", hsnCode: "9403", stockQty: 20, unit: "Bays", unitRate: 16500, totalValue: 330000 },
+  { id: "stk_079", companyId: "comp_4", itemName: "Commercial Countertop Price Verifier Kiosk", category: "POS Hardware", hsnCode: "8471", stockQty: 6, unit: "Units", unitRate: 54000, totalValue: 324000 },
+  { id: "stk_080", companyId: "comp_4", itemName: "Cash Counting Machine with UV/MG Fake Note Detect", category: "Currency Equipment", hsnCode: "8472", stockQty: 8, unit: "Pcs", unitRate: 14500, totalValue: 116000 },
+  { id: "stk_081", companyId: "comp_4", itemName: "Handheld Inventory Stock Tally PDA Android 11", category: "POS Hardware", hsnCode: "8471", stockQty: 10, unit: "Pcs", unitRate: 26000, totalValue: 260000 },
+  { id: "stk_082", companyId: "comp_4", itemName: "Wax-Resin Thermal Ribbon Roll 110mm x 300m", category: "Consumables", hsnCode: "9612", stockQty: 120, unit: "Rolls", unitRate: 450, totalValue: 54000 },
+  { id: "stk_083", companyId: "comp_4", itemName: "UV Banknote Verifier Countertop Lamp", category: "Currency Equipment", hsnCode: "8539", stockQty: 25, unit: "Pcs", unitRate: 1200, totalValue: 30000 },
+
+  // comp_5 Stock Items (Enterprise Cloud & Data Center Infrastructure)
+  { id: "stk_008", companyId: "comp_5", itemName: "High-Performance Cloud Rack Server 2U 128-Core", category: "Servers", hsnCode: "8471", stockQty: 14, unit: "Nodes", unitRate: 280000, totalValue: 3920000 },
+  { id: "stk_084", companyId: "comp_5", itemName: "Pure Storage FlashArray //X20 NVMe SAN Storage", category: "SAN Storage", hsnCode: "8471", stockQty: 2, unit: "Arrays", unitRate: 1850000, totalValue: 3700000 },
+  { id: "stk_085", companyId: "comp_5", itemName: "Arista 7050X3 32-Port 100GbE QSFP28 Switch", category: "Data Center", hsnCode: "8517", stockQty: 4, unit: "Pcs", unitRate: 480000, totalValue: 1920000 },
+  { id: "stk_086", companyId: "comp_5", itemName: "AMD EPYC 9654 Processor 96-Core 2.4GHz", category: "Components", hsnCode: "8542", stockQty: 8, unit: "Pcs", unitRate: 720000, totalValue: 5760000 },
+  { id: "stk_087", companyId: "comp_5", itemName: "Samsung 15.36TB NVMe U.2 Enterprise SSD", category: "Storage", hsnCode: "8471", stockQty: 20, unit: "Pcs", unitRate: 145000, totalValue: 2900000 },
+  { id: "stk_088", companyId: "comp_5", itemName: "Mellanox ConnectX-6 Dx Dual 100GbE PCIe Card", category: "Networking", hsnCode: "8517", stockQty: 12, unit: "Pcs", unitRate: 98000, totalValue: 1176000 },
+  { id: "stk_089", companyId: "comp_5", itemName: "APC InRow RC Precision Air Conditioning Unit", category: "HVAC Data Center", hsnCode: "8415", stockQty: 2, unit: "Units", unitRate: 850000, totalValue: 1700000 },
+  { id: "stk_090", companyId: "comp_5", itemName: "Raritan Dominion PX3 Smart Managed Rack PDU", category: "Power Systems", hsnCode: "8537", stockQty: 16, unit: "Pcs", unitRate: 45000, totalValue: 720000 },
+  { id: "stk_091", companyId: "comp_5", itemName: "FM-200 Gas Fire Suppression Cylinder 50L", category: "Safety", hsnCode: "8424", stockQty: 4, unit: "Cylinders", unitRate: 125000, totalValue: 500000 },
+  { id: "stk_092", companyId: "comp_5", itemName: "100G QSFP28 to 4x25G SFP28 Breakout DAC Cable 3m", category: "Networking", hsnCode: "8544", stockQty: 25, unit: "Pcs", unitRate: 8500, totalValue: 212500 },
+  { id: "stk_093", companyId: "comp_5", itemName: "F5 BIG-IP i5800 Local Traffic Manager ADC", category: "Security Hardware", hsnCode: "8517", stockQty: 2, unit: "Units", unitRate: 920000, totalValue: 1840000 },
+  { id: "stk_094", companyId: "comp_5", itemName: "Palo Alto PA-3410 Enterprise NGFW Firewall", category: "Security Hardware", hsnCode: "8517", stockQty: 2, unit: "Units", unitRate: 640000, totalValue: 1280000 },
+  { id: "stk_095", companyId: "comp_5", itemName: "Red Hat Enterprise Linux Server Datacenter License", category: "Software Licenses", hsnCode: "9983", stockQty: 10, unit: "Keys", unitRate: 180000, totalValue: 1800000 },
+  { id: "stk_096", companyId: "comp_5", itemName: "VMware vSphere 8 Enterprise Plus per Core License", category: "Software Licenses", hsnCode: "9983", stockQty: 64, unit: "Cores", unitRate: 24000, totalValue: 1536000 },
+  { id: "stk_097", companyId: "comp_5", itemName: "Veeam Backup & Replication Universal License", category: "Software Licenses", hsnCode: "9983", stockQty: 25, unit: "Instances", unitRate: 14500, totalValue: 362500 },
+  { id: "stk_098", companyId: "comp_5", itemName: "Vertiv Liebert EXS 60kVA Monolithic UPS System", category: "Power Systems", hsnCode: "8504", stockQty: 1, unit: "System", unitRate: 1450000, totalValue: 1450000 },
+  { id: "stk_099", companyId: "comp_5", itemName: "Cat8 S/FTP Snagless Ethernet Cable 2m 40Gbps", category: "Networking", hsnCode: "8544", stockQty: 80, unit: "Pcs", unitRate: 1100, totalValue: 88000 },
+  { id: "stk_100", companyId: "comp_5", itemName: "Biometric Palm Reader Access Control System", category: "Security", hsnCode: "8543", stockQty: 6, unit: "Sets", unitRate: 42000, totalValue: 252000 },
+  { id: "stk_101", companyId: "comp_5", itemName: "Data Center Raise Floor Panel 600x600 Heavy Duty", category: "Civil & Infrastructure", hsnCode: "7308", stockQty: 200, unit: "Panels", unitRate: 1850, totalValue: 370000 },
+  { id: "stk_102", companyId: "comp_5", itemName: "High Density MPO-12 Fiber Trunk Cable 24-Core 15m", category: "Networking", hsnCode: "8544", stockQty: 15, unit: "Pcs", unitRate: 12500, totalValue: 187500 },
+  { id: "stk_103", companyId: "comp_5", itemName: "Server Rack Cold Aisle Containment Door Kit", category: "Data Center", hsnCode: "7610", stockQty: 2, unit: "Kits", unitRate: 165000, totalValue: 330000 },
+];

@@ -1,0 +1,242 @@
+================================================================================
+COMPREHENSIVE SPECIFICATION: PHASE 4 - TALLY DOUBLE-ENTRY XML GENERATOR & DIRECT SYNC
+================================================================================
+Architectural Synthesis of:
+1. Bally-AI (jishanahmed-shaikh/bally-ai) - Tally ERP 9 / TallyPrime XML Voucher Exporter
+2. Hisaabo (hisaabo/hisaabo) - Double-Entry Ledger Posting, Audit Proofing & Batch Sync Queue
+================================================================================
+
+1. PROBLEM STATEMENT & OBJECTIVE
+--------------------------------------------------------------------------------
+Phases 1-3 took an unstructured bank statement PDF, extracted tabular transaction rows,
+classified cryptic narrations to verified chart-of-accounts ledgers, and provided an
+accountant review grid for approval.
+
+Phase 4 fulfills the end goal:
+Converting all verified bank transactions into standard-compliant, double-entry
+accounting vouchers in Tally ERP 9 and TallyPrime:
+1. Direct Native Sync: Sending HTTP/XML requests directly into a running local Tally instance (port 9000).
+2. Standalone Tally XML Export: Generating an offline `.xml` file ready for "Import Data -> Vouchers" in Tally for air-gapped or remote accountant workstations.
+3. Local Audit Trail: Updating the local SQLite `mirror_vouchers` and `bank_transactions` status to `IMPORTED` with Tally master IDs and timestamps.
+
+
+2. TALLY DOUBLE-ENTRY ACCOUNTING RULES FOR BANK TRANSACTIONS
+--------------------------------------------------------------------------------
+Tally enforces strict XML element tags, sign conventions, and positive/negative indicators:
+
+A. Payment Voucher (Withdrawals / Money Out from Bank):
+   - Voucher Type: `<VOUCHER VCHTYPE="Payment">`
+   - Party / Expense Ledger Entry (Debit):
+     * `<ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>`
+     * `<AMOUNT>-${amount}</AMOUNT>` (Negative value indicates Debit in Tally XML)
+   - Bank Account Ledger Entry (Credit):
+     * `<ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>`
+     * `<AMOUNT>${amount}</AMOUNT>` (Positive value indicates Credit in Tally XML)
+   - Banking Details:
+     * `<BANKALLOCATIONS.LIST>` with `<TRANSACTIONTYPE>`, `<INSTRUMENTNUMBER>`, `<PAYMENTFAVOURING>`
+
+B. Receipt Voucher (Deposits / Money In to Bank):
+   - Voucher Type: `<VOUCHER VCHTYPE="Receipt">`
+   - Bank Account Ledger Entry (Debit):
+     * `<ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>`
+     * `<AMOUNT>-${amount}</AMOUNT>` (Debit in Tally XML)
+   - Customer / Income Ledger Entry (Credit):
+     * `<ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>`
+     * `<AMOUNT>${amount}</AMOUNT>` (Credit in Tally XML)
+
+C. Contra Voucher (Internal Transfers between Bank & Cash):
+   - Voucher Type: `<VOUCHER VCHTYPE="Contra">`
+   - Used when Cash is withdrawn from Bank or deposited to Bank, or transferred to another bank account.
+
+D. Split Allocations (Multi-ledger breakdown):
+   - If a ₹1,18,000 payment is split across Consulting (₹1,00,000) and GST (₹18,000):
+     * Emits multiple `<ALLLEDGERENTRIES.LIST>` blocks for each split debit line.
+     * Single balancing `<ALLLEDGERENTRIES.LIST>` block for the full Bank credit.
+
+
+3. TECHNICAL SPECIFICATIONS & TALLY XML SCHEMA
+--------------------------------------------------------------------------------
+File: `electron/main/tally/bankVoucherXmlBuilder.ts`
+
+```xml
+<ENVELOPE>
+  <HEADER>
+    <TALLYREQUEST>Import Data</TALLYREQUEST>
+  </HEADER>
+  <BODY>
+    <IMPORTDATA>
+      <REQUESTDESC>
+        <REPORTNAME>All Masters</REPORTNAME>
+        <STATICVARIABLES>
+          <SVCURRENTCOMPANY>Acme Industrial Traders</SVCURRENTCOMPANY>
+        </STATICVARIABLES>
+      </REQUESTDESC>
+      <REQUESTDATA>
+        <TALLYMESSAGE xmlns:UDF="TallyUDF">
+          <VOUCHER VCHTYPE="Payment" ACTION="Create" OBJVIEW="Accounting Voucher View">
+            <GUID>urn:uuid:f47ac10b-58cc-4372-a567-0e02b2c3d479</GUID>
+            <DATE>20260728</DATE>
+            <EFFECTIVEDATE>20260728</EFFECTIVEDATE>
+            <VOUCHERTYPENAME>Payment</VOUCHERTYPENAME>
+            <VOUCHERNUMBER>BNK-2026-07-001</VOUCHERNUMBER>
+            <PARTYLEDGERNAME>Global Tech Logistics</PARTYLEDGERNAME>
+            <NARRATION>NEFT-AXIS-00918-GLOB TECH LOGIS-DELHI | Ref: AXIS992102</NARRATION>
+            <ISINVOICE>No</ISINVOICE>
+
+            <!-- Debit: Expense / Party Ledger -->
+            <ALLLEDGERENTRIES.LIST>
+              <LEDGERNAME>Global Tech Logistics</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
+              <ISPARTYLEDGER>Yes</ISPARTYLEDGER>
+              <AMOUNT>-14000.00</AMOUNT>
+            </ALLLEDGERENTRIES.LIST>
+
+            <!-- Credit: Bank Ledger -->
+            <ALLLEDGERENTRIES.LIST>
+              <LEDGERNAME>HDFC Bank Current A/c</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
+              <ISPARTYLEDGER>No</ISPARTYLEDGER>
+              <AMOUNT>14000.00</AMOUNT>
+              <BANKALLOCATIONS.LIST>
+                <DATE>20260728</DATE>
+                <INSTRUMENTDATE>20260728</INSTRUMENTDATE>
+                <TRANSACTIONTYPE>Inter Bank Transfer</TRANSACTIONTYPE>
+                <PAYMENTFAVOURING>Global Tech Logistics</PAYMENTFAVOURING>
+                <INSTRUMENTNUMBER>AXIS992102</INSTRUMENTNUMBER>
+                <AMOUNT>14000.00</AMOUNT>
+              </BANKALLOCATIONS.LIST>
+            </ALLLEDGERENTRIES.LIST>
+          </VOUCHER>
+        </TALLYMESSAGE>
+      </REQUESTDATA>
+    </IMPORTDATA>
+  </BODY>
+</ENVELOPE>
+```
+
+
+4. PIPELINE & EXECUTION WORKFLOW
+--------------------------------------------------------------------------------
+
+[Verified Transactions Array from Phase 3]
+                   │
+                   ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 1. Tally Payload Assembler                                  │
+│    (electron/main/tally/bankVoucherXmlBuilder.ts)           │
+│    - Verifies double-entry zero-sum balance:                │
+│      Sum(Debits) + Sum(Credits) == 0                        │
+│    - Formats dates to YYYYMMDD                              │
+│    - XML-escapes all strings (narration, names, refs)       │
+│    - Injects unique UUID GUIDs for idempotency              │
+└─────────────────────────────────────────────────────────────┘
+                   │
+                   ▼
+       ┌───────────────────────────────┐
+       │ Choice: Import Route          │
+       └───────────────────────────────┘
+          /                         \
+  (Direct Sync)                 (Export XML)
+        /                             \
+       ▼                               ▼
+┌───────────────────────────────┐  ┌───────────────────────────────┐
+│ Route A: Local Tally Connector│  │ Route B: Standalone File Export│
+│ - POST to http://localhost:9000│ │ - Writes XML bundle to disk   │
+│ - tallyHttpClient.ts          │  │ - Ready for manual import in  │
+│ - Parses <CREATED>, <ALTERED>,│  │   Tally: "Import -> Vouchers" │
+│   <ERRORS> response XML       │  └───────────────────────────────┘
+└───────────────────────────────┘
+                   │
+                   ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 2. Post-Import Audit & Mirror Sync                          │
+│    - Update SQLite bank_transactions status: "IMPORTED"     │
+│    - Add entries to mirror_vouchers local database table    │
+│    - Update ReconciliationView with "Reconciled" status     │
+│    - Present completion toast with success/failure summary  │
+└─────────────────────────────────────────────────────────────┘
+
+
+5. TALLY RESPONSE PARSER & ERROR HANDLING
+--------------------------------------------------------------------------------
+File: `electron/main/tally/tallyImportResponseParser.ts`
+
+When Tally receives the XML payload, it responds with:
+```xml
+<RESPONSE>
+  <CREATED>148</CREATED>
+  <ALTERED>0</ALTERED>
+  <DELETED>0</DELETED>
+  <COMBINED>0</COMBINED>
+  <IGNORED>0</IGNORED>
+  <ERRORS>0</ERRORS>
+  <LINEERROR>Ledger 'Acme Industrial' does not exist!</LINEERROR>
+</RESPONSE>
+```
+
+Handling Logic:
+1. If `<ERRORS>0</ERRORS>` and `<CREATED> > 0`:
+   - All vouchers successfully created in Tally.
+   - Batch status set to `SUCCESS`.
+2. If `<ERRORS> > 0`:
+   - Extracts all `<LINEERROR>` descriptions.
+   - Matches the error to the specific transaction row (e.g. missing ledger, locked period).
+   - Returns granular failure list to the UI so the user can fix the specific ledger and retry only failed vouchers without duplicating successful ones (idempotent via GUID).
+
+
+6. IPC & PRELOAD API SPECIFICATION
+--------------------------------------------------------------------------------
+File: `electron/main/ipc/tallyIpc.ts` & `electron/preload/preload.ts`
+
+New IPC Handlers:
+1. `tally:import-statement-vouchers`
+   - Payload:
+     ```typescript
+     {
+       companyName: string;
+       bankLedgerName: string;
+       vouchers: VerifiedVoucherRow[];
+     }
+     ```
+   - Invokes direct HTTP import to Tally.
+   - Returns `{ success: boolean; createdCount: number; errorCount: number; errors: string[] }`.
+
+2. `tally:export-statement-vouchers-xml`
+   - Payload:
+     ```typescript
+     {
+       companyName: string;
+       bankLedgerName: string;
+       vouchers: VerifiedVoucherRow[];
+       suggestedFileName?: string;
+     }
+     ```
+   - Opens native save dialog and saves formatted Tally XML file.
+
+Preload API:
+```typescript
+desktop.tally.importStatementVouchers(
+  companyName: string,
+  bankLedgerName: string,
+  vouchers: VerifiedVoucherRow[]
+): Promise<TallyImportResult>;
+
+desktop.tally.exportStatementVouchersXml(
+  companyName: string,
+  bankLedgerName: string,
+  vouchers: VerifiedVoucherRow[]
+): Promise<{ filePath: string | null; exportedCount: number }>;
+```
+
+
+7. STEP-BY-STEP IMPLEMENTATION CHECKLIST
+--------------------------------------------------------------------------------
+[ ] Step 1: Create `electron/main/tally/bankVoucherXmlBuilder.ts` supporting Payment, Receipt, Contra, and Split allocations.
+[ ] Step 2: Create `electron/main/tally/tallyImportResponseParser.ts` for parsing Tally's `<RESPONSE>` XML.
+[ ] Step 3: Implement `tally:import-statement-vouchers` IPC channel in `electron/main/ipc/tallyIpc.ts`.
+[ ] Step 4: Implement `tally:export-statement-vouchers-xml` file writer in `electron/main/ipc/tallyIpc.ts`.
+[ ] Step 5: Expose new methods in `electron/preload/preload.ts`.
+[ ] Step 6: Connect the "Post to Tally" and "Export XML" buttons in `BankStatementReviewModal.tsx`.
+[ ] Step 7: Update local SQLite state (`bank_transactions`, `mirror_vouchers`) upon successful sync.
+[ ] Step 8: End-to-End Verification: Ingest sample bank statement PDF -> Run 4-Tier classification -> Review in UI -> Push to Tally -> Verify vouchers appear in Tally Day Book / Bank Ledger with exact amounts and narrations.
+================================================================================

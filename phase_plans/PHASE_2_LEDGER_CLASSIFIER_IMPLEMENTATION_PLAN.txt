@@ -1,0 +1,293 @@
+================================================================================
+COMPREHENSIVE SPECIFICATION: PHASE 2 - NARRATION EXTRACTION & 4-TIER LEDGER ENGINE
+================================================================================
+Architectural Synthesis of:
+1. Bally-AI (jishanahmed-shaikh/bally-ai) - LLM Accounting Categorization & Reasoner
+2. Hisaabo (hisaabo/hisaabo) - Multi-Tier Rule Hierarchy, Payment Tokenizers & BRS
+================================================================================
+
+1. PROBLEM STATEMENT & BACKGROUND
+--------------------------------------------------------------------------------
+Phase 1 produces structured transaction rows from Indian bank statement PDFs:
+  (Date, Narration, Chq/Ref, Debit, Credit, Running Balance)
+
+However, raw bank narrations in India are extremely noisy, dense, and cryptic:
+  Example A: "UPI/421981298412/09:15:32/PAYTM-ACME ENTERPRISES/KOTAK/REF9981"
+  Example B: "NEFT-INB-AXISP0029102-INFRA SERVICES LLP-MUMBAI-IN"
+  Example C: "ACH D- AWS CLOUD INDIA PVT-4401928"
+  Example D: "CHQ DEPOSIT - CLG - TATA CONSULTANCY SERVICES"
+  Example E: "CONSOLIDATED CHG FOR DEC 2025 INCL GST"
+  Example F: "INT PD ON SB A/C FOR Q3"
+
+Tally ERP 9 / TallyPrime requires an exact double-entry voucher structure:
+  - Debit Account (e.g. "Acme Enterprises" or "Bank Charges")
+  - Credit Account (e.g. "HDFC Bank Ltd")
+  - Voucher Type ("Payment", "Receipt", or "Contra")
+
+Phase 2 builds the automated 4-tier engine that analyzes and categorizes every single
+narration into the exact Tally Ledger from the active company's chart of accounts.
+
+
+2. COMPLETE DEPENDENCIES & ENVIRONMENT SPECIFICATIONS
+--------------------------------------------------------------------------------
+A. Production NPM Dependencies:
+   1. `fuse.js` (version `^7.0.0`):
+      - In-memory weighted fuzzy search across all SQLite mirror ledgers.
+      - Enables sub-millisecond offline matching for party names without network calls.
+   2. `groq-sdk` (version `^0.15.0`) AND/OR `@google/genai` (version `^0.1.1`):
+      - Groq SDK provides ultra-fast inference (Llama-3.3-70b-versatile @ 250+ tokens/sec).
+      - Gemini provides deep multimodal structured output.
+      - Supports local key encryption via existing `electron/main/secrets/credentialVault.ts`.
+   3. `zod` (version `^4.4.3`, already installed):
+      - Enforces strict JSON Schema validation on LLM output to guarantee zero malformed outputs.
+
+B. Fallback / Offline Model Heuristics:
+   - Built-in regex rule dictionaries for 50+ common statutory, banking, and payment gateway patterns.
+   - Zero-dependency local Levenshtein algorithm (`electron/main/local-db/fuzzyMatcher.ts`).
+
+
+3. NARRATION TOKEN CLEANER & NORMALIZER PIPELINE
+--------------------------------------------------------------------------------
+File: `electron/main/services/narrationCleaner.ts`
+
+Before matching against ledgers, the raw string passes through a multi-pass token cleaner:
+
+Pass 1: Payment Mode & Channel Stripping
+  - Strips prefixes:
+    `UPI/`, `NEFT-`, `RTGS-`, `IMPS-`, `POS/`, `ACH/`, `INB/`, `INF/`, `NACH/`,
+    `BIL/`, `VPS/`, `MMT/`, `ECS/`, `EFT/`, `CLG/`, `ATM-WDL/`, `CASH-DEP/`
+
+Pass 2: Identifier & Reference Masking
+  - Removes 10-18 digit numeric reference numbers (UTRs, RRNs, transaction IDs):
+    `/\b\d{10,18}\b/g`
+  - Removes timestamp tags:
+    `/\b\d{2}:\d{2}(?::\d{2})?\b/g`
+  - Removes bank routing codes and gateway tags:
+    `/\b(PAYTM|RAZORPAY|PHONEPE|BHIM|GPAY|OKAXIS|OKHDFCBANK|OKSBI|OKICICI|YESB|ICIC|HDFC|UTIB|BARB)\b/gi`
+
+Pass 3: Punctuation & Extra Whitespace Clean
+  - Replaces hyphens, slashes, and periods with single spaces.
+  - Trims and normalizes multiple spaces into a single space.
+
+Example Transformation:
+  Input:  "UPI/421981298412/09:15:32/PAYTM-ACME ENTERPRISES/KOTAK/REF9981"
+  Output: "ACME ENTERPRISES"
+
+
+4. THE 4-TIER CASCADING CLASSIFIER ARCHITECTURE
+--------------------------------------------------------------------------------
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          TIER 1: STATUTORY & BANKING RULES                   │
+│                                (Confidence: 1.0)                            │
+└─────────────────────────────────────────────────────────────────────────────┘
+Executes instant regex pattern matching against known banking & statutory primitives:
+1. Bank Charges:
+   - Patterns: `\b(chg|charges|sms\s*chg|annual\s*fee|folio|imprest|debit\s*card\s*chg)\b`
+   - Suggested Ledger: "Bank Charges" | Voucher Type: "Payment"
+2. Interest Income:
+   - Patterns: `\b(int\.?\s*pd|interest\s*credit|sb\s*int|interest\s*received)\b`
+   - Suggested Ledger: "Bank Interest Received" | Voucher Type: "Receipt"
+3. Cash / ATM Transactions (Contra):
+   - Patterns: `\b(atm\s*wdl|cash\s*wdl|cash\s*dep|self\s*chq|nfs\s*cash)\b`
+   - Suggested Ledger: "Cash" | Voucher Type: "Contra"
+4. Taxes & Statutory Dues:
+   - Patterns: `\b(gst\s*pmt|gst\s*challan|advance\s*tax|tds\s*pmt|mca\s*fee|epfo|esic)\b`
+   - Suggested Ledger: "Statutory & Tax Payable" | Voucher Type: "Payment"
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       TIER 2: HISTORICAL LEARNING MEMORY                    │
+│                                (Confidence: 0.95)                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+Checks SQLite table `narration_ledger_rules` for mappings previously confirmed by the user:
+- Query:
+  `SELECT matched_ledger_name, matched_ledger_id, voucher_type FROM narration_ledger_rules WHERE company_id = ? AND narration_pattern = ?`
+- Increments `hit_count` and updates `last_used_at` upon matching.
+- Ensures the system "learns" from user overrides and avoids re-asking identical transactions.
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                     TIER 3: FUZZY TOKEN MATCHER (Fuse.js)                   │
+│                             (Confidence: 0.85 - 0.92)                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+Matches the cleaned party name against all ledgers in `mirror_ledgers` for the active company:
+- Configuration:
+  ```typescript
+  const fuse = new Fuse(activeCompanyLedgers, {
+    keys: [
+      { name: "name", weight: 0.7 },
+      { name: "parentGroup", weight: 0.2 },
+      { name: "guid", weight: 0.1 }
+    ],
+    threshold: 0.35,
+    ignoreLocation: true,
+    minMatchCharLength: 3
+  });
+  ```
+- If the top match score is below 0.25 (higher similarity), assigns the ledger with confidence 0.90+.
+- Automatically infers Voucher Type:
+  * If Ledger parent is "Sundry Debtors" and Credit > 0 => "Receipt"
+  * If Ledger parent is "Sundry Creditors" or "Indirect Expenses" and Debit > 0 => "Payment"
+  * If Ledger parent is "Bank Accounts" or "Cash-in-hand" => "Contra"
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                   TIER 4: LLM BATCH ACCOUNTING REASONER (Bally-AI)          │
+│                             (Confidence: 0.75 - 0.90)                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+For narrations that did not trigger Tiers 1-3 (unfamiliar party names, split narrations):
+- Batching: Groups up to 30 transactions into a single structured prompt.
+- LLM Provider: Groq (Llama-3.3-70b-versatile) or Google Gemini 2.5 Flash.
+- Prompt Contract:
+  ```json
+  {
+    "companyName": "Acme Industrial Traders",
+    "businessType": "Manufacturing & Distribution",
+    "chartOfAccounts": [
+      { "name": "Tata Steel Ltd", "group": "Sundry Creditors" },
+      { "name": "Office Electricity Expense", "group": "Indirect Expenses" },
+      { "name": "Global Tech Logistics", "group": "Sundry Creditors" }
+    ],
+    "unmappedTransactions": [
+      {
+        "id": "tx_201",
+        "date": "2026-07-28",
+        "rawNarration": "NEFT-AXIS-00918-GLOB TECH LOGIS-DELHI",
+        "cleanedParty": "GLOB TECH LOGIS DELHI",
+        "debit": 14000.00,
+        "credit": 0.00
+      }
+    ]
+  }
+  ```
+- Strict Response Format:
+  ```json
+  [
+    {
+      "transactionId": "tx_201",
+      "suggestedLedger": "Global Tech Logistics",
+      "voucherType": "Payment",
+      "confidence": 0.89,
+      "reasoning": "Normalized party matches active supplier Global Tech Logistics with freight expense pattern."
+    }
+  ]
+  ```
+
+
+5. COMPLETE DATA TYPES & SCHEMAS
+--------------------------------------------------------------------------------
+File: `electron/main/services/ledgerClassifierTypes.ts`
+
+```typescript
+export type MatchTier = 
+  | "TIER_1_RULE"
+  | "TIER_2_HISTORY"
+  | "TIER_3_FUZZY"
+  | "TIER_4_LLM"
+  | "UNMAPPED";
+
+export type VoucherType = "Payment" | "Receipt" | "Contra" | "Journal";
+
+export interface LedgerClassificationResult {
+  transactionId: string;
+  originalNarration: string;
+  cleanedPartyName: string;
+  suggestedLedgerName: string;
+  suggestedLedgerId: string | null;
+  parentGroup?: string;
+  voucherType: VoucherType;
+  confidenceScore: number;
+  matchTier: MatchTier;
+  reasoning: string;
+  isAutoApproved: boolean; // True if confidenceScore >= 0.90
+}
+
+export interface StatementClassificationSummary {
+  totalProcessed: number;
+  autoMatchedCount: number;
+  reviewRequiredCount: number;
+  byTierBreakdown: {
+    tier1Rules: number;
+    tier2History: number;
+    tier3Fuzzy: number;
+    tier4Llm: number;
+    unmapped: number;
+  };
+  results: LedgerClassificationResult[];
+}
+```
+
+
+6. DATABASE SCHEMA EXTENSIONS (SQLite)
+--------------------------------------------------------------------------------
+File: `electron/main/local-db/schema.ts`
+
+```sql
+-- 1. Learnt Narration Rules Cache
+CREATE TABLE IF NOT EXISTS narration_ledger_rules (
+  id TEXT PRIMARY KEY,
+  company_id TEXT NOT NULL,
+  narration_pattern TEXT NOT NULL,
+  normalized_party_name TEXT NOT NULL,
+  matched_ledger_name TEXT NOT NULL,
+  matched_ledger_id TEXT,
+  voucher_type TEXT NOT NULL,
+  confidence REAL DEFAULT 1.0,
+  hit_count INTEGER DEFAULT 1,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  UNIQUE(company_id, narration_pattern)
+);
+CREATE INDEX IF NOT EXISTS idx_narration_rules_lookup 
+  ON narration_ledger_rules(company_id, narration_pattern);
+
+-- 2. Enhanced Bank Transactions Table Fields
+ALTER TABLE bank_transactions ADD COLUMN suggested_ledger_name TEXT;
+ALTER TABLE bank_transactions ADD COLUMN suggested_ledger_id TEXT;
+ALTER TABLE bank_transactions ADD COLUMN voucher_type TEXT;
+ALTER TABLE bank_transactions ADD COLUMN classification_tier TEXT;
+ALTER TABLE bank_transactions ADD COLUMN confidence_score REAL;
+ALTER TABLE bank_transactions ADD COLUMN classification_notes TEXT;
+```
+
+
+7. IPC & PRELOAD API SPECIFICATION
+--------------------------------------------------------------------------------
+File: `electron/main/ipc/documentIpc.ts` & `electron/preload/preload.ts`
+
+IPC Handlers to register:
+1. `documents:classify-transactions`
+   - Payload: `{ companyId: string, transactions: ParsedStatementTransaction[] }`
+   - Executes the 4-Tier classification pipeline and returns `StatementClassificationSummary`.
+2. `documents:save-ledger-rule`
+   - Payload: `{ companyId: string, narrationPattern: string, ledgerName: string, voucherType: string }`
+   - Saves user override into `narration_ledger_rules` for future auto-approval.
+3. `documents:get-ledger-rules`
+   - Payload: `{ companyId: string }`
+   - Returns all active rules for the company.
+
+Preload API:
+```typescript
+desktop.documents.classifyTransactions(
+  companyId: string, 
+  transactions: ParsedStatementTransaction[]
+): Promise<StatementClassificationSummary>;
+
+desktop.documents.saveLedgerRule(
+  companyId: string, 
+  rule: { narrationPattern: string; ledgerName: string; voucherType: string }
+): Promise<void>;
+```
+
+
+8. STEP-BY-STEP IMPLEMENTATION CHECKLIST
+--------------------------------------------------------------------------------
+[ ] Step 1: Install `fuse.js` and `groq-sdk` in `package.json`.
+[ ] Step 2: Implement `electron/main/services/narrationCleaner.ts` with comprehensive Indian payment mode and UTR strippers.
+[ ] Step 3: Implement `electron/main/services/statutoryRulesTier1.ts` with bank fee, interest, contra, and tax regex matchers.
+[ ] Step 4: Implement `electron/main/services/historyLearningTier2.ts` with SQLite query & rule insertion logic.
+[ ] Step 5: Implement `electron/main/services/fuzzyLedgerTier3.ts` using `fuse.js` matching against active company `mirror_ledgers`.
+[ ] Step 6: Implement `electron/main/services/llmReasonerTier4.ts` with batch prompt orchestration (Groq/Gemini).
+[ ] Step 7: Implement master coordinator `electron/main/services/ledgerClassifierEngine.ts` chaining Tiers 1 through 4.
+[ ] Step 8: Update SQLite schema in `electron/main/local-db/schema.ts` for `narration_ledger_rules`.
+[ ] Step 9: Register IPC handlers in `documentIpc.ts` and expose methods in `preload.ts`.
+[ ] Step 10: Verification & Testing: Run benchmark test suite against 50 real-world Indian bank statement narrations to confirm >85% auto-matching accuracy with proper double-entry voucher type assignment.
+================================================================================

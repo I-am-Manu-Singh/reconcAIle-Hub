@@ -1,0 +1,185 @@
+<ENVELOPE>
+  <HEADER>
+    <TALLYREQUEST>Import Data</TALLYREQUEST>
+  </HEADER>
+  <BODY>
+    <IMPORTDATA>
+      <REQUESTDESC>
+        <REPORTNAME>Vouchers</REPORTNAME>
+        <STATICVARIABLES>
+          <SVCURRENTCOMPANY>Your Company Name Here</SVCURRENTCOMPANY>
+        </STATICVARIABLES>
+      </REQUESTDESC>
+      <REQUESTDATA>
+        
+        <!-- ========================================== -->
+        <!-- 1. MASTER: VOUCHER TYPE                    -->
+        <!-- ========================================== -->
+        <TALLYMESSAGE xmlns:UDF="TallyUDF">
+          <VOUCHERTYPE ACTION="Create">
+            <NAME>Sales</NAME>
+            <PARENT>Sales</PARENT>
+            <NUMBERINGMETHOD>Manual</NUMBERINGMETHOD>
+            <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
+            <COMMONNARRATION>Yes</COMMONNARRATION>
+          </VOUCHERTYPE>
+        </TALLYMESSAGE>
+
+        <!-- ========================================== -->
+        <!-- 2. MASTER: CURRENCY                        -->
+        <!-- ========================================== -->
+        <TALLYMESSAGE xmlns:UDF="TallyUDF">
+          <CURRENCY ACTION="Create">
+            <NAME>INR</NAME>
+            <ORIGINALNAME>Indian Rupee</ORIGINALNAME>
+            <MAILINGNAME>INR Curr</MAILINGNAME>
+            <DECIMALPLACES>2</DECIMALPLACES>
+          </CURRENCY>
+        </TALLYMESSAGE>
+
+        <!-- ========================================== -->
+        <!-- 3. MASTER: GROUP                           -->
+        <!-- ========================================== -->
+        <TALLYMESSAGE xmlns:UDF="TallyUDF">
+          <GROUP ACTION="Create">
+            <NAME>Sundry Debtors</NAME>
+            <PARENT>Current Assets</PARENT>
+          </GROUP>
+        </TALLYMESSAGE>
+
+        <!-- ========================================== -->
+        <!-- 4. MASTER: COST CATEGORY & CENTRE          -->
+        <!-- ========================================== -->
+        <TALLYMESSAGE xmlns:UDF="TallyUDF">
+          <COSTCATEGORY ACTION="Create">
+            <NAME>Primary Cost Category</NAME>
+            <ALLOCATEREVENUE>Yes</ALLOCATEREVENUE>
+            <ALLOCATENONREVENUE>Yes</ALLOCATENONREVENUE>
+          </COSTCATEGORY>
+        </TALLYMESSAGE>
+
+        <TALLYMESSAGE xmlns:UDF="TallyUDF">
+          <COSTCENTRE ACTION="Create">
+            <NAME>Head Office</NAME>
+            <CATEGORY>Primary Cost Category</CATEGORY>
+            <REVENUELEDFOROPBAL>No</REVENUELEDFOROPBAL>
+            <AFFECTSSTOCK>No</AFFECTSSTOCK>
+          </COSTCENTRE>
+        </TALLYMESSAGE>
+
+        <!-- ========================================== -->
+        <!-- 5. MASTER: LEDGER                          -->
+        <!-- ========================================== -->
+        <TALLYMESSAGE xmlns:UDF="TallyUDF">
+          <LEDGER ACTION="Create">
+            <NAME>Sample Customer Ltd</NAME>
+            <PARENT>Sundry Debtors</PARENT>
+            <ISCOSTCENTRESON>No</ISCOSTCENTRESON>
+            <STATENAME>Rajasthan</STATENAME>
+            <LEDSTATENAME>Rajasthan</LEDSTATENAME>
+            <COUNTRYNAME>India</COUNTRYNAME>
+            <GSTREGISTRATIONTYPE>Regular</GSTREGISTRATIONTYPE>
+            <PARTYGSTIN>08AAAAA0000A1Z5</PARTYGSTIN>
+            <ISBILLWISEON>Yes</ISBILLWISEON>
+            <GSTAPPLICABLE>— Applicable</GSTAPPLICABLE>
+            <GSTTYPEOFSUPPLY>Services</GSTTYPEOFSUPPLY>
+            
+            <!-- TallyPrime 3.0+ Compliant GST Details -->
+            <LEDGSTREGDETAILS.LIST>
+              <APPLICABLEFROM>20170401</APPLICABLEFROM>
+              <GSTREGISTRATIONTYPE>Regular</GSTREGISTRATIONTYPE>
+              <STATE>Rajasthan</STATE>
+              <GSTIN>08AAAAA0000A1Z5</GSTIN>
+            </LEDGSTREGDETAILS.LIST>
+
+            <!-- TallyPrime 3.0+ Compliant Mailing Details -->
+            <LEDMAILINGDETAILS.LIST>
+              <APPLICABLEFROM>20170401</APPLICABLEFROM>
+              <MAILINGNAME>Sample Customer Ltd</MAILINGNAME>
+              <STATE>Rajasthan</STATE>
+              <COUNTRY>India</COUNTRY>
+            </LEDMAILINGDETAILS.LIST>
+          </LEDGER>
+        </TALLYMESSAGE>
+
+        <!-- ========================================== -->
+        <!-- 6. TRANSACTION: VOUCHER ENTRY              -->
+        <!-- ========================================== -->
+        <TALLYMESSAGE xmlns:UDF="TallyUDF">
+          <VOUCHER REMOTEID="udi-BF39WD-1-20260401-Sales" VCHTYPE="Sales" ACTION="Create" OBJVIEW="Accounting Voucher View">
+            <DATE>20260401</DATE>
+            <EFFECTIVEDATE>20260401</EFFECTIVEDATE>
+            <VOUCHERTYPENAME>Sales</VOUCHERTYPENAME>
+            <VOUCHERNUMBER>INV-001</VOUCHERNUMBER>
+            <REFERENCE>PO-9988</REFERENCE>
+            <REFERENCEDATE>20260401</REFERENCEDATE>
+            <NARRATION>Being goods sold on credit against purchase order.</NARRATION>
+            <PERSISTEDVIEW>Accounting Voucher View</PERSISTEDVIEW>
+            <ISINVOICE>No</ISINVOICE>
+            
+            <!-- Party Details -->
+            <PARTYNAME>Sample Customer Ltd</PARTYNAME>
+            <ADDRESS.LIST>
+              <ADDRESS>123 Industrial Area</ADDRESS>
+              <ADDRESS>Kota</ADDRESS>
+            </ADDRESS.LIST>
+            <BASICBUYERNAME>Sample Customer Ltd</BASICBUYERNAME>
+            <BASICBUYERADDRESS.LIST>
+              <BASICBUYERADDRESS>123 Industrial Area</BASICBUYERADDRESS>
+              <BASICBUYERADDRESS>Kota</BASICBUYERADDRESS>
+            </BASICBUYERADDRESS.LIST>
+            <PARTYGSTIN>08AAAAA0000A1Z5</PARTYGSTIN>
+            <STATENAME>Rajasthan</STATENAME>
+            <COUNTRYOFRESIDENCE>India</COUNTRYOFRESIDENCE>
+            <PLACEOFSUPPLY>Rajasthan</PLACEOFSUPPLY>
+            <GSTREGISTRATIONTYPE>Regular</GSTREGISTRATIONTYPE>
+
+            <!-- Ledger Entries List -->
+            <!-- Entry 1: Party Ledger (Debit) -->
+            <ALLLEDGERENTRIES.LIST>
+              <LEDGERNAME>Sample Customer Ltd</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
+              <AMOUNT>-11800.00</AMOUNT>
+              <BILLALLOCATIONS.LIST>
+                <NAME>INV-001</NAME>
+                <BILLTYPE>New Ref</BILLTYPE>
+                <AMOUNT>-11800.00</AMOUNT>
+              </BILLALLOCATIONS.LIST>
+            </ALLLEDGERENTRIES.LIST>
+
+            <!-- Entry 2: Sales Ledger (Credit) -->
+            <ALLLEDGERENTRIES.LIST>
+              <LEDGERNAME>Sales Account</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
+              <AMOUNT>10000.00</AMOUNT>
+              <CATEGORYALLOCATIONS.LIST>
+                <CATEGORY>Primary Cost Category</CATEGORY>
+                <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
+                <COSTCENTREALLOCATIONS.LIST>
+                  <NAME>Head Office</NAME>
+                  <AMOUNT>10000.00</AMOUNT>
+                </COSTCENTREALLOCATIONS.LIST>
+              </CATEGORYALLOCATIONS.LIST>
+            </ALLLEDGERENTRIES.LIST>
+
+            <!-- Entry 3: Output CGST Ledger (Credit) -->
+            <ALLLEDGERENTRIES.LIST>
+              <LEDGERNAME>Output CGST</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
+              <AMOUNT>900.00</AMOUNT>
+            </ALLLEDGERENTRIES.LIST>
+
+            <!-- Entry 4: Output SGST Ledger (Credit) -->
+            <ALLLEDGERENTRIES.LIST>
+              <LEDGERNAME>Output SGST</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
+              <AMOUNT>900.00</AMOUNT>
+            </ALLLEDGERENTRIES.LIST>
+
+          </VOUCHER>
+        </TALLYMESSAGE>
+
+      </REQUESTDATA>
+    </IMPORTDATA>
+  </BODY>
+</ENVELOPE>

@@ -1,0 +1,148 @@
+================================================================================
+PHASE 1 IMPLEMENTATION PLAN: NATIVE BANK STATEMENT PDF EXTRACTOR & LAYOUT ENGINE
+Based on architectures from Bally-AI (jishanahmed-shaikh/bally-ai) & Hisaabo (hisaabo/hisaabo)
+================================================================================
+
+1. EXECUTIVE SUMMARY & ROOT CAUSE
+--------------------------------------------------------------------------------
+In the current codebase, importing PDF statements into the ledger view does not work because:
+1. fileParser.ts runs file.text() inside the browser renderer. Because PDFs are binary streams, file.text() returns raw byte sequences/scrambled glyphs, resulting in 0 bank transactions.
+2. In electron/main/local-db/documentRepository.ts, processOcr() uses pdf-parse but directs all output into extractOcrDocument, which expects a single invoice (single invoice number, date, and tax amounts). It has no multi-row statement parser.
+
+Objective of Phase 1:
+Build a native, coordinate-aware PDF Bank Statement extraction pipeline within Electron (electron/main/services/bankStatementParser.ts) capable of extracting, segmenting, and normalizing transaction rows across multi-page Indian bank statements (HDFC, ICICI, SBI, Axis, Kotak, PNB, Canara, and generic fallback) into SQLite bank transactions and ledger entries.
+
+
+2. REQUIRED PACKAGES & DEPENDENCIES
+--------------------------------------------------------------------------------
+1. pdfjs-dist (^4.10.38 or legacy ^3.11.174 for Node.js runtime):
+   - Extracts text items with exact baseline and bounding box coordinates (x, y, width, height) via getTextContent().
+   - Solves the multi-column tabular layout problem where pdf-parse collapses or scrambles horizontal table boundaries.
+2. date-fns (^4.1.0):
+   - Robust parsing and normalization of heterogeneous Indian bank date stamps (dd/MM/yyyy, dd-MMM-yyyy, dd-MM-yy, yyyy-MM-dd) into standard ISO strings (YYYY-MM-DD).
+3. zod (^4.4.3, already installed):
+   - Strict runtime schema validation of parsed statement records and IPC transfer payloads.
+4. fuse.js (^7.0.0, prepared for Phase 2):
+   - Fast offline fuzzy matching of party names from narrations against existing Tally mirror ledgers.
+
+
+3. ARCHITECTURE & WORKFLOW
+--------------------------------------------------------------------------------
+[PDF File Buffer]
+       │
+       ▼
+[Step 1: Coordinate Extraction]
+  - pdfjs-dist getTextContent() extracts all tokens with (x, y, width, height)
+       │
+       ▼
+[Step 2: Bank Profile & Header Detection]
+  - Signature regex matches bank identity (HDFC, SBI, ICICI, Axis, Kotak, PNB, or Generic)
+       │
+       ▼
+[Step 3: Column Boundary Auto-Discovery]
+  - Centroid X-coordinates identify column spans for Date, Narration, RefNo, Debit, Credit, Balance
+       │
+       ▼
+[Step 4: Row Line Clustering & Multi-line Narration Stitching]
+  - Proximity clustering on Y-axis (±2.5px tolerance)
+  - Anchor rows identified by valid Date stamps
+  - Wrapped lines stitched back to parent transaction narration
+       │
+       ▼
+[Step 5: Number & Currency Normalization]
+  - Clean Indian numbering system (1,23,456.78), currency symbols (₹, INR, Rs.), Dr/Cr notations
+       │
+       ▼
+[Step 6: Mathematical Balance Continuity Verification]
+  - Continuous validation: Prev_Balance - Debit + Credit == Current_Balance
+  - Generates audit confidence score and flags anomalies
+       │
+       ▼
+[Step 7: SQLite Persistence & IPC Return]
+  - Persist into bank_transactions table
+  - Return StatementExtractionResult via window.desktop.documents.parseBankStatement(id)
+
+
+4. DETAILED COMPONENT SPECIFICATIONS
+--------------------------------------------------------------------------------
+
+A. Data Structures (electron/main/services/bankStatementTypes.ts)
+   - RawPdfTextItem: { str, x, y, width, height, pageNumber }
+   - BankPreset: "HDFC" | "ICICI" | "SBI" | "AXIS" | "KOTAK" | "PNB" | "GENERIC"
+   - ColumnBoundary: { name: "date"|"valueDate"|"narration"|"chqRef"|"withdrawal"|"deposit"|"balance", minX, maxX }
+   - ParsedStatementTransaction:
+     * id: string
+     * date: string (ISO YYYY-MM-DD)
+     * valueDate?: string
+     * narration: string (stitched multi-line text)
+     * referenceNo: string (Chq, UTR, UPI Ref, IMPS)
+     * debit: number
+     * credit: number
+     * balance: number
+     * pageNumber: number
+     * bankName: string
+     * accountNumber?: string
+   - StatementExtractionResult:
+     * bankName: BankPreset
+     * accountNumber: string | null
+     * period: { fromDate: string | null, toDate: string | null }
+     * openingBalance: number | null
+     * closingBalance: number | null
+     * transactions: ParsedStatementTransaction[]
+     * confidence: number
+     * pageCount: number
+
+B. Spatial Token Extractor (electron/main/services/pdfCoordinateExtractor.ts)
+   - Loads binary buffer using pdfjs-dist.
+   - Normalizes page coordinate origins from bottom-left to top-left for consistent reading flow.
+   - Collects all text fragments preserving exact x and y coordinate offsets.
+
+C. Bank Header & Template Profiler (electron/main/services/bankPresets.ts)
+   - Pre-configured detection signatures:
+     * HDFC: "HDFC BANK", "Narration", "Chq./Ref.No.", "Withdrawal (Dr)", "Deposit (Cr)", "Closing Balance"
+     * ICICI: "ICICI Bank", "Transaction Date", "Cheque Number", "Withdrawal Amount", "Deposit Amount", "Balance"
+     * SBI: "State Bank of India", "Txn Date", "Value Date", "Description", "Ref No./Cheque No.", "Debit", "Credit"
+     * Axis: "AXIS BANK", "TRANSACTION DATE", "PARTICULARS", "CHQ NO", "DR", "CR", "BALANCE"
+     * Kotak: "Kotak Mahindra Bank", "Date", "Description", "Chq / Ref No", "Amount", "Dr / Cr", "Balance"
+     * Generic Heuristic (Hisaabo approach): Scans page headers for rows containing at least 4 keywords:
+       (Date), (Narration|Description|Particulars), (Debit|Withdrawal|Dr), (Credit|Deposit|Cr), (Balance).
+
+D. Column Boundaries Auto-Discovery
+   - Computes header column centroids on the detected header row.
+   - Calculates dynamic horizontal bounds [minX, maxX] between adjacent column centroids.
+   - Allows handling varying margins across different statement exports.
+
+E. Row Clustering & Multi-line Narration Stitcher
+   - Groups text items within Y-tolerance (±2.5px) into single physical lines.
+   - Detects transaction anchor line if first column matches bank's date format regex.
+   - If a succeeding line has text in the narration column but empty date/amount columns, appends it to the previous transaction narration.
+
+F. Currency & Value Normalizer
+   - Strips commas from Indian format (e.g. "12,50,000.50" -> 1250000.50).
+   - Handles trailing "Dr" or "Cr" flags.
+   - Handles negative representations like "(5,000.00)" or "-5000.00".
+   - Handles dashes or blanks as 0.00.
+
+G. Balance Continuity Audit
+   - For every transaction i:
+     Audit Equation: Balance[i-1] - Debit[i] + Credit[i] == Balance[i]
+   - Records calculation delta if any discrepancy occurs.
+   - Assigns 100% confidence when all rows reconcile mathematically.
+
+H. Database & IPC Integration
+   - File: electron/main/local-db/documentRepository.ts & electron/main/ipc/documentIpc.ts
+   - Implements documents:parse-bank-statement IPC channel.
+   - Exposes window.desktop.documents.parseBankStatement(documentId) in electron/preload/preload.ts.
+   - Stores parsed rows in SQLite table bank_transactions linked to company_id.
+
+
+5. IMPLEMENTATION TIMELINE & VERIFICATION
+--------------------------------------------------------------------------------
+Step 1: Install production dependencies: npm install pdfjs-dist date-fns
+Step 2: Create electron/main/services/bankStatementTypes.ts with data models.
+Step 3: Create electron/main/services/bankPresets.ts with bank layout rules.
+Step 4: Create electron/main/services/pdfCoordinateExtractor.ts with coordinate extraction.
+Step 5: Create electron/main/services/bankStatementParser.ts integrating clustering and continuity logic.
+Step 6: Register IPC handler in electron/main/ipc/documentIpc.ts and expose in electron/preload/preload.ts.
+Step 7: Verification: Test against sample bank statement PDFs (HDFC, ICICI, SBI) and verify that all transaction rows, multi-line narrations, and balances populate cleanly into the ledger/reconciliation view without data loss.
+================================================================================

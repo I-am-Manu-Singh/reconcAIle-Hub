@@ -1,0 +1,188 @@
+================================================================================
+COMPREHENSIVE SPECIFICATION: PHASE 3 - INTERACTIVE STATEMENT REVIEW & LEDGER GRID
+================================================================================
+Architectural Synthesis of:
+1. Bally-AI (jishanahmed-shaikh/bally-ai) - Interactive Review Table, Confidence Badges & Inline Overrides
+2. Hisaabo (hisaabo/hisaabo) - Multi-Row Split View, Bulk Ledger Assignment, BRS Balancing & CA Verification
+================================================================================
+
+1. OVERVIEW & OBJECTIVE
+--------------------------------------------------------------------------------
+Phase 1 extracted structured transaction rows from the PDF bank statement.
+Phase 2 classified each row into suggested Tally ledgers, voucher types, and confidence scores.
+
+Phase 3 implements the accountant-grade verification interface (UI/UX) in React:
+- Displays all extracted bank transactions with their AI/Rule-matched ledgers.
+- Provides immediate visual confidence indicators (Green for >90% Auto-Approved, Yellow for Review, Red for Unmapped).
+- Allows inline editing of the assigned ledger via a searchable autocomplete dropdown populated from the company's active chart of accounts (`mirror_ledgers`).
+- Enables single-click bulk ledger assignments for recurring parties.
+- Supports split transactions (splitting a single bank debit across multiple expense ledgers or GST).
+- Mathematical reconciliation preview (Starting Balance -> Inflows -> Outflows -> Ending Balance).
+- Seamless transition to Phase 4 (Push to Tally / Generate Tally XML).
+
+
+2. REQUIRED PACKAGES & UI ASSETS
+--------------------------------------------------------------------------------
+1. `lucide-react` (already installed `^1.28.0`):
+   - Icons: `CheckCircle2`, `AlertTriangle`, `Sparkles`, `Split`, `Layers`, `Search`, `Building2`, `Filter`, `ArrowUpRight`, `ArrowDownLeft`, `Save`, `FileText`, `Send`
+2. `fuse.js` (installed in Phase 2):
+   - Powers the client-side fast autocomplete filter in the ledger selector dropdown.
+3. Vanilla CSS (as per project conventions):
+   - Modern glassmorphic cards, responsive table grid, sticky headers, subtle hover animations.
+
+
+3. SCREEN ARCHITECTURE & USER WORKFLOW
+--------------------------------------------------------------------------------
+
+[User Drops/Uploads Bank Statement PDF]
+               │
+               ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       MODAL / VIEW: STATEMENT AUDIT WORKSPACE               │
+│                                                                             │
+│ ┌─────────────────────────────────────────────────────────────────────────┐ │
+│ │ 1. STATEMENT HEADER BANNER                                              │ │
+│ │  Bank: HDFC Bank | A/c: XXXXXX9921 | Period: 01-Jul-2026 to 31-Jul-2026  │ │
+│ │  Total Txs: 148 | Auto-Approved: 126 (85%) | Needs Review: 22           │ │
+│ │  Opening: ₹4,15,200.00 | Net Flow: +₹1,20,500.00 | Closing: ₹5,35,700.00│ │
+│ └─────────────────────────────────────────────────────────────────────────┘ │
+│                                                                             │
+│ ┌─────────────────────────────────────────────────────────────────────────┐ │
+│ │ 2. CONTROL & FILTER TOOLBAR                                             │ │
+│ │  [Search Narration/Ref...] [Filter: All / Needs Review / Auto-Approved] │ │
+│ │  [Bulk Action: Assign Selected to Ledger ▼] [Toggle Split Row]          │ │
+│ └─────────────────────────────────────────────────────────────────────────┘ │
+│                                                                             │
+│ ┌─────────────────────────────────────────────────────────────────────────┐ │
+│ │ 3. INTERACTIVE REVIEW DATA GRID                                         │ │
+│ │  [✓] Date  Narration & Ref    Debit    Credit   Voucher  Ledger Account │ │
+│ │  ────────────────────────────────────────────────────────────────────── │ │
+│ │  [ ] 01/07 UPI/421/Acme...     ₹15,000   -      Payment  [Acme Trading] │ │
+│ │      Badge: 94% (Fuzzy) - Reason: Matched against Sundry Creditor       │ │
+│ │  [✓] 02/07 NEFT-Unknown-99       -    ₹50,000   Receipt  [Select Ledger]│ │
+│ │      Badge: ⚠️ Unmapped (Red) - Requires user selection                  │ │
+│ └─────────────────────────────────────────────────────────────────────────┘ │
+│                                                                             │
+│ ┌─────────────────────────────────────────────────────────────────────────┐ │
+│ │ 4. ACTIONS & SYNC FOOTER                                                │ │
+│ │  [Remember My Choices for Future Statements (Toggle)]                   │ │
+│ │  [Export Verified CSV/JSON]  [Generate Draft Vouchers & Push to Tally]  │ │
+│ └─────────────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+4. DETAILED COMPONENT BREAKDOWN
+--------------------------------------------------------------------------------
+
+A. Master Review Component: `src/renderer/src/modules/BankStatementReviewModal.tsx`
+   - Props:
+     ```typescript
+     export interface BankStatementReviewProps {
+       readonly isOpen: boolean;
+       readonly onClose: () => void;
+       readonly statementResult: StatementExtractionResult;
+       readonly classificationResult: StatementClassificationSummary;
+       readonly mirrorLedgers: readonly TallyLedger[];
+       readonly activeCompanyId: string;
+       readonly onCommitVouchers: (verifiedTransactions: VerifiedVoucherRow[]) => Promise<void>;
+     }
+     ```
+   - Maintains local editable state so accountants can freely adjust ledgers, amounts, and remarks.
+
+B. Searchable Ledger Dropdown Component: `src/renderer/src/components/SearchableLedgerSelect.tsx`
+   - Real-time client-side search filtering across 1,000+ chart-of-accounts ledgers.
+   - Highlights Parent Group tags (e.g., `Acme Trading [Sundry Creditors]`, `Rent Expense [Indirect Expenses]`).
+   - "Create New Ledger" option: If a party does not exist in Tally, allows typing a new ledger name with parent group assignment on the fly.
+
+C. Split Transaction Editor: `src/renderer/src/components/SplitTransactionRow.tsx`
+   - Enabled by clicking the "Split" button on any transaction.
+   - Allows dividing a single ₹1,18,000 bank withdrawal into:
+     * Line 1: Professional Consulting Fees (₹1,00,000)
+     * Line 2: CGST Input Tax (₹9,000)
+     * Line 3: SGST Input Tax (₹9,000)
+   - Real-time validation ensures that the sum of split lines strictly equals the bank debit/credit amount.
+
+D. Bulk Categorization Bar:
+   - Checkbox multi-select (Select All, Invert, Select All Unmapped).
+   - "Apply Ledger to Selected": Useful when 20 rows are daily Swiggy/Uber/Petrol or identical customer payments.
+   - Option: "Remember Rule": When ticked, calls `desktop.documents.saveLedgerRule` so the system automatically handles this party in future statement imports.
+
+
+5. DATA TYPES & VERIFIED ROW CONTRACT
+--------------------------------------------------------------------------------
+File: `src/renderer/src/types/bankReviewTypes.ts`
+
+```typescript
+export interface SplitAllocation {
+  id: string;
+  ledgerName: string;
+  ledgerId?: string;
+  amount: number;
+  narrationRemark?: string;
+}
+
+export interface VerifiedVoucherRow {
+  transactionId: string;
+  date: string;               // ISO YYYY-MM-DD
+  originalNarration: string;
+  referenceNo: string;
+  debit: number;
+  credit: number;
+  voucherType: "Payment" | "Receipt" | "Contra" | "Journal";
+  primaryLedgerName: string;  // Opposing ledger in Tally double-entry
+  primaryLedgerId?: string;
+  bankLedgerName: string;     // The bank account ledger (e.g. "HDFC Current A/c")
+  isSplit: boolean;
+  splits?: SplitAllocation[];
+  userModified: boolean;
+  rememberRule: boolean;
+  auditStatus: "AUTO_APPROVED" | "MANUALLY_VERIFIED" | "REJECTED";
+}
+
+export interface StatementSummaryStats {
+  totalRows: number;
+  totalDebit: number;
+  totalCredit: number;
+  openingBalance: number;
+  calculatedClosingBalance: number;
+  statementClosingBalance: number;
+  isReconciled: boolean;
+  unmappedCount: number;
+}
+```
+
+
+6. STATE MANAGEMENT & ERROR RECOVERY
+--------------------------------------------------------------------------------
+- Undo/Redo support for bulk changes.
+- Persistence to `localStorage` or temporary SQLite state so that navigating away from the view does not discard in-progress edits.
+- Warning banners if:
+  * Any unmapped transactions remain when user clicks "Commit to Tally".
+  * Split allocation total does not balance with transaction total.
+  * Statement closing balance has a variance against the sum of parsed rows.
+
+
+7. INTEGRATION WITH EXISTING APPLICATION VIEWS
+--------------------------------------------------------------------------------
+1. `StatementImportView.tsx`:
+   - When a user uploads a `.pdf` file in StatementImportView, instead of doing `file.text()`, it detects that the document is a bank statement.
+   - Triggers `desktop.documents.parseBankStatement(id)` and `desktop.documents.classifyTransactions(...)`.
+   - Opens `BankStatementReviewModal` with the populated data.
+2. `ReconciliationView.tsx`:
+   - Adds an "Import PDF Statement" button in the reconciliation header.
+   - Directly populates the Bank Feed table with verified ledger-assigned transactions.
+3. `TransactionsView.tsx`:
+   - Displays imported statement transactions in the Master Voucher Register with a distinct badge: `Imported via Statement`.
+
+
+8. STEP-BY-STEP IMPLEMENTATION CHECKLIST
+--------------------------------------------------------------------------------
+[ ] Step 1: Create `src/renderer/src/types/bankReviewTypes.ts`.
+[ ] Step 2: Implement `src/renderer/src/components/SearchableLedgerSelect.tsx` with fast fuzzy search and group badges.
+[ ] Step 3: Implement `src/renderer/src/components/SplitTransactionRow.tsx` for multi-ledger allocations.
+[ ] Step 4: Implement `src/renderer/src/modules/BankStatementReviewModal.tsx` with header summary stats, filter toolbar, interactive grid, and action buttons.
+[ ] Step 5: Add batch action handlers (select all, assign to ledger, bulk approve, remember rule).
+[ ] Step 6: Connect `StatementImportView.tsx` and `ReconciliationView.tsx` to launch the review modal upon PDF statement ingest.
+[ ] Step 7: UI & Aesthetics Polish: Ensure responsive layout, high-contrast dark-mode styling, sticky table headers, and smooth micro-interactions.
+[ ] Step 8: Verification: Load a 50-row statement, edit 5 ledgers, perform 1 split transaction, apply 1 bulk assignment, and verify that the committed output array is completely validated and ready for Phase 4 Tally XML generation.
+================================================================================
