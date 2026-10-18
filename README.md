@@ -1,5 +1,10 @@
 # ReconcAILe Hub 🚀
 
+<p align="center">
+  <img src="public/logo.png" alt="ReconcAILe Hub Logo" width="128" height="128" style="border-radius: 20%;" />
+</p>
+
+
 An enterprise AI-powered accounting automation hub and desktop bridge designed for seamless synchronization with **TallyPrime**, automated bank reconciliation (BRS), AI invoice OCR extraction, and multi-entity financial management.
 
 [![Web Build & Deploy](https://github.com/I-am-Manu-Singh/reconcAIle-Hub/actions/workflows/web-build.yml/badge.svg)](https://github.com/I-am-Manu-Singh/reconcAIle-Hub/actions/workflows/web-build.yml)
@@ -36,6 +41,51 @@ graph TD
 2. **Tier 2 (Historical Learning)**: Past approved counterparty-to-ledger assignments from previous bank statements.
 3. **Tier 3 (Fuzzy Token Similarity)**: High-speed Fuse.js fuzzy string distance matching against Tally's Chart of Accounts.
 4. **Tier 4 (Local / Cloud LLM Inference)**: Smart semantic ledger inference via local SmallLM / Groq / Google GenAI when configured.
+
+---
+
+## 📱 App Screenshots
+
+<p align="center">
+  <table>
+    <tr>
+      <td align="center" width="25%">
+        <img src="screenshots/screenshot_1.png" alt="Screenshot 1" width="100%" /><br />
+        <b>1. Main Screen</b>
+      </td>
+      <td align="center" width="25%">
+        <img src="screenshots/screenshot_2.png" alt="Screenshot 2" width="100%" /><br />
+        <b>2. Core Experience</b>
+      </td>
+      <td align="center" width="25%">
+        <img src="screenshots/screenshot_3.png" alt="Screenshot 3" width="100%" /><br />
+        <b>3. Interactive Mode</b>
+      </td>
+      <td align="center" width="25%">
+        <img src="screenshots/screenshot_4.png" alt="Screenshot 4" width="100%" /><br />
+        <b>4. Advanced Features</b>
+      </td>
+    </tr>
+    <tr>
+      <td align="center" width="25%">
+        <img src="screenshots/screenshot_5.png" alt="Screenshot 5" width="100%" /><br />
+        <b>5. Workflow / Details</b>
+      </td>
+      <td align="center" width="25%">
+        <img src="screenshots/screenshot_6.png" alt="Screenshot 6" width="100%" /><br />
+        <b>6. Studio Console</b>
+      </td>
+      <td align="center" width="25%">
+        <img src="screenshots/screenshot_7.png" alt="Screenshot 7" width="100%" /><br />
+        <b>7. Settings & Config</b>
+      </td>
+      <td align="center" width="25%">
+        <img src="screenshots/screenshot_8.png" alt="Screenshot 8" width="100%" /><br />
+        <b>8. Dark & Light Theme</b>
+      </td>
+    </tr>
+  </table>
+</p>
 
 ---
 
